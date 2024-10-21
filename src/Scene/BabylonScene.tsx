@@ -6,9 +6,11 @@ import "./map.scss";
 import { MapMouseEvent } from '@maptiler/sdk';
 
 type TMapProps = {
-    box: undefined | BABYLON.Mesh;
     scene: undefined | BABYLON.Scene;
+    map: undefined | maptilersdk.Map;
+    isEdit: boolean;
 
+    setMap: (map: maptilersdk.Map) => void;
     setScene: (scene: BABYLON.Scene) => void;
     setBox: (box: BABYLON.Mesh) => void;
 };
@@ -16,10 +18,9 @@ type TMapProps = {
 const MapWith3DModel: React.FC<TMapProps> = (props) => {
     const mapContainer = useRef<HTMLDivElement | null>(null);
 
-    const { box, scene } = props;
+    const { map, scene, isEdit } = props;
 
     const [engine, setEngine] = useState<BABYLON.Engine>();
-    const [map, setMap] = useState<maptilersdk.Map>();
 
     const worldOrigin = [148.9819, -35.39847];
     const worldAltitude = 0;
@@ -47,7 +48,7 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
             antialias: true, // enable MSAA antialiasing
         });
 
-        setMap(map)
+        props.setMap(map)
 
         // Calculate world matrix
         const worldMatrix = BABYLON.Matrix.Compose(
@@ -126,10 +127,21 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
     }, []);
 
     useEffect(() => {
-        if (!map) return;
+        if (!map || !scene) return;
 
-        map.on("click", handleClickScene)
-    }, [scene]);
+        if (isEdit) {
+            map.off("click", handleClickScene);
+            scene.attachControl()
+        }
+        else {
+            map.on("click", handleClickScene)
+            scene.detachControl()
+        }
+
+        return () => {
+            map.off("click", handleClickScene);
+        };
+    }, [isEdit, scene, map])
 
     function handleClickScene(evt: MapMouseEvent): void {
         if (!scene) return;
@@ -150,6 +162,14 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
             depth: 10,
         }, scene);
         newBox.position = new BABYLON.Vector3(x, y, z + 50); // Устанавливаем новые координаты
+
+        // Add click event to the box
+        newBox.actionManager = new BABYLON.ActionManager(scene);
+        newBox.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
+            // On box click, pass the box to handleSetBox
+            console.log("xd")
+            props.setBox(newBox);
+        }));
 
         props.setBox(newBox); // Сохраняем новый объект
     }

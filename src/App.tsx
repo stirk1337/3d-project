@@ -1,22 +1,29 @@
 import { ArcRotateCamera, Color3, FreeCamera, HemisphericLight, MeshBuilder, StandardMaterial, Vector3 } from "@babylonjs/core";
+import * as maptilersdk from '@maptiler/sdk';
 
 import './App.scss';
 import * as BABYLON from "@babylonjs/core";
 import MapWith3DModel from "./Scene/BabylonScene";
-import { MouseEventHandler, SyntheticEvent, useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type TDimensions = "x" | "y" | "z";
 
 function App() {
+  const [map, setMap] = useState<maptilersdk.Map>();
   const [box, setBox] = useState<BABYLON.Mesh>();
   const [scene, setScene] = useState<BABYLON.Scene>();
   const [material, setMaterial] = useState<BABYLON.Material>();
+  const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     if (box && material) {
       box.material = material;
     }
   }, [box, material]);
+
+  function handleSetMap(map: maptilersdk.Map) {
+    setMap(map);
+  }
 
   function handleSetBox(newBox: BABYLON.Mesh) {
     setBox((prevBox) => {
@@ -53,9 +60,13 @@ function App() {
     box.position[dimension] += shift;
   };
 
+  const handleEditMode = () => {
+    setIsEditMode(prev => !prev)
+  }
+
   return (
     <div>
-      <MapWith3DModel box={box} scene={scene} setBox={handleSetBox} setScene={handleSetScene} />
+      <MapWith3DModel map={map} scene={scene} isEdit={isEditMode} setMap={handleSetMap} setBox={handleSetBox} setScene={handleSetScene} />
       <div>
         <button onClick={() => changeObjectSize("x", 10)}>расширь по X</button>
         <button onClick={() => changeObjectSize("x", -10)}>уменьши по X</button>
@@ -79,6 +90,9 @@ function App() {
       <div>
         <button onClick={() => moveObject("z", 10)}>Двигать по Z</button>
         <button onClick={() => moveObject("z", -10)}>Двигать по -Z</button>
+      </div>
+      <div>
+        <button onClick={handleEditMode}>{isEditMode ? "Выключить редактирование" : "Включить редактирование"}</button>
       </div>
     </div>
   );
