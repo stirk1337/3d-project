@@ -1,15 +1,13 @@
-import { ArcRotateCamera, Color3, FreeCamera, HemisphericLight, MeshBuilder, StandardMaterial, Vector3 } from "@babylonjs/core";
-import * as maptilersdk from '@maptiler/sdk';
-
 import './App.scss';
 import * as BABYLON from "@babylonjs/core";
 import MapWith3DModel from "./Scene/BabylonScene";
 import { useEffect, useState } from "react";
+import mapboxgl from 'mapbox-gl';
 
 type TDimensions = "x" | "y" | "z";
 
 function App() {
-  const [map, setMap] = useState<maptilersdk.Map>();
+  const [map, setMap] = useState<mapboxgl.Map>();
   const [box, setBox] = useState<BABYLON.Mesh>();
   const [scene, setScene] = useState<BABYLON.Scene>();
   const [material, setMaterial] = useState<BABYLON.Material>();
@@ -21,20 +19,18 @@ function App() {
     }
   }, [box, material]);
 
-  function handleSetMap(map: maptilersdk.Map) {
+  function handleSetMap(map: mapboxgl.Map) {
     setMap(map);
   }
 
   function handleSetBox(newBox: BABYLON.Mesh) {
     setBox((prevBox) => {
-      // If there's a previous box, update its material to gray
       if (prevBox) {
         const grayMaterial = new BABYLON.StandardMaterial("grayMaterial", prevBox.getScene());
         grayMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5); // Gray color
         prevBox.material = grayMaterial;
       }
 
-      // Return the new box to update the state
       return newBox;
     });
   }

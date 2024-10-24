@@ -1,16 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as BABYLON from "@babylonjs/core";
-import * as maptilersdk from '@maptiler/sdk';
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import "./map.scss";
-import { MapMouseEvent } from '@maptiler/sdk';
+import mapboxgl from 'mapbox-gl';
+import MapboxDraw from '@mapbox/mapbox-gl-draw';
+import earcut from 'earcut';
 
 type TMapProps = {
     scene: undefined | BABYLON.Scene;
-    map: undefined | maptilersdk.Map;
+    map: undefined | mapboxgl.Map;
     isEdit: boolean;
 
-    setMap: (map: maptilersdk.Map) => void;
+    setMap: (map: mapboxgl.Map) => void;
     setScene: (scene: BABYLON.Scene) => void;
     setBox: (box: BABYLON.Mesh) => void;
 };
@@ -27,7 +28,7 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
     const worldRotate = [Math.PI / 2, 0, 0];
 
     // Calculate mercator coordinates and scale
-    const worldOriginMercator = maptilersdk.MercatorCoordinate.fromLngLat(
+    const worldOriginMercator = mapboxgl.MercatorCoordinate.fromLngLat(
         worldOrigin,
         worldAltitude
     );
@@ -36,17 +37,65 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
     useEffect(() => {
         if (!mapContainer.current) return;
 
-        // Initialize MapTiler SDK
-        maptilersdk.config.apiKey = 'IgMTbFvjizOKPAqDj5pd';
+        mapboxgl.accessToken = "pk.eyJ1Ijoic3RpcmsxMzM3IiwiYSI6ImNtMmtveDQ2YzAzN2UyaXJ6OThxZ2Z6MXQifQ.Nrk1UIvUc9Ff5POTTkveTg";
 
-        const map = new maptilersdk.Map({
+        const map = new mapboxgl.Map({
             container: mapContainer.current,
-            style: maptilersdk.MapStyle.STREETS,
+            style: 'mapbox://styles/mapbox/streets-v12',
             zoom: 18,
             center: [148.9819, -35.3981],
             pitch: 60,
             antialias: true, // enable MSAA antialiasing
         });
+
+        const draw = new MapboxDraw({
+            displayControlsDefault: false,
+            controls: {
+                polygon: true,
+                trash: true
+            },
+            defaultMode: 'draw_polygon'
+        });
+        map.addControl(draw);
+
+        map.on('draw.create', updateArea);
+        map.on('draw.delete', updateArea);
+        map.on('draw.update', updateArea);
+
+        function updateArea(e) {
+            const data = draw.getAll();
+            const geometry = data.features[0].geometry as GeoJSON.Polygon;
+            const coordinates = geometry.coordinates[0];
+
+            console.log(coordinates)
+
+            const polygonCorners: BABYLON.Vector2[] = []
+
+            coordinates.forEach((point) => {
+                const [x, y] = point;
+
+                const clickedMercator = mapboxgl.MercatorCoordinate.fromLngLat(
+                    [x, y],
+                    worldAltitude
+                );
+
+                const babylonX = -(clickedMercator.x - worldOriginMercator.x) / worldScale;
+                const babylonZ = (clickedMercator.y - worldOriginMercator.y) / worldScale;
+
+                polygonCorners.push(new BABYLON.Vector2(babylonX, babylonZ + 50))
+            })
+
+            const polygon = new BABYLON.PolygonMeshBuilder("polytri", polygonCorners, scene, earcut);
+            const extrudedPolygon = polygon.build(true, 10);
+            extrudedPolygon.position.y = 10;
+
+            extrudedPolygon.actionManager = new BABYLON.ActionManager(scene);
+            extrudedPolygon.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
+                props.setBox(extrudedPolygon);
+            }));
+
+            props.setBox(extrudedPolygon);
+        }
 
         props.setMap(map)
 
@@ -65,9 +114,9 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
             )
         );
 
-        const customLayer = {
+        const customLayer: mapboxgl.CustomLayerInterface = {
             id: '3d-model',
-            type: 'custom',
+            type: 'custom' as const, // Указываем строгий литерал "custom"
             renderingMode: '3d',
             onAdd: function (map: any, gl: WebGLRenderingContext) {
                 this.engine = new BABYLON.Engine(
@@ -86,7 +135,6 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
                     this.engine.wipeCaches(true);
                 };
 
-
                 this.camera = new BABYLON.ArcRotateCamera(
                     'Camera',
                     Math.PI / 2,
@@ -104,25 +152,63 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
                 );
                 light.intensity = 0.7;
 
-                this.map = map; // Сохраните ссылку на карту
+                this.map = map;
             },
             render: function (gl: WebGLRenderingContext, matrix: number[]) {
                 const cameraMatrix = BABYLON.Matrix.FromArray(matrix);
                 const wvpMatrix = worldMatrix.multiply(cameraMatrix);
 
                 this.camera.freezeProjectionMatrix(wvpMatrix);
-                this.scene.render(true); // Используйте сохраненную сцену
+                this.scene.render(true);
                 this.map.triggerRepaint();
             },
         };
 
         map.on('style.load', function () {
+            const layers = map.getStyle()?.layers;
+            if (!layers) return;
+
+            const labelLayerId = layers.find(
+                (layer) => layer.type === 'symbol' && layer.layout && layer.layout['text-field']
+            )?.id;
+
+            map.addLayer({
+                id: 'add-3d-buildings',
+                source: 'composite',
+                'source-layer': 'building',
+                filter: ['==', 'extrude', 'true'],
+                type: 'fill-extrusion',
+                minzoom: 15,
+                paint: {
+                    'fill-extrusion-color': '#aaa',
+                    'fill-extrusion-height': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        15,
+                        0,
+                        15.05,
+                        ['get', 'height']
+                    ],
+                    'fill-extrusion-base': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        15,
+                        0,
+                        15.05,
+                        ['get', 'min_height']
+                    ],
+                    'fill-extrusion-opacity': 0.6
+                }
+            },
+                labelLayerId);
+
             map.addLayer(customLayer);
         });
 
         return () => {
             map.remove();
-            // Вы можете добавить очистку сцен и других ресурсов здесь
         };
     }, []);
 
@@ -130,49 +216,15 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
         if (!map || !scene) return;
 
         if (isEdit) {
-            map.off("click", handleClickScene);
             scene.attachControl()
         }
         else {
-            map.on("click", handleClickScene)
             scene.detachControl()
         }
 
         return () => {
-            map.off("click", handleClickScene);
         };
     }, [isEdit, scene, map])
-
-    function handleClickScene(evt: MapMouseEvent): void {
-        if (!scene) return;
-
-        const clickedMercator = maptilersdk.MercatorCoordinate.fromLngLat(
-            [evt.lngLat.lng, evt.lngLat.lat],
-            worldAltitude
-        );
-
-        // Корректируем координаты по масштабированию и смещению
-        const x = -(clickedMercator.x - worldOriginMercator.x) / worldScale;
-        const z = (clickedMercator.y - worldOriginMercator.y) / worldScale;
-        const y = 0;
-
-        const newBox = BABYLON.MeshBuilder.CreateBox('box', {
-            width: 10,       // Ширина 100 пикселей
-            height: 10,  // Высота из пропсов
-            depth: 10,
-        }, scene);
-        newBox.position = new BABYLON.Vector3(x, y, z + 50); // Устанавливаем новые координаты
-
-        // Add click event to the box
-        newBox.actionManager = new BABYLON.ActionManager(scene);
-        newBox.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
-            // On box click, pass the box to handleSetBox
-            console.log("xd")
-            props.setBox(newBox);
-        }));
-
-        props.setBox(newBox); // Сохраняем новый объект
-    }
 
     window.addEventListener('resize', function () {
         if (engine) {
