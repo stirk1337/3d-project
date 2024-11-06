@@ -1,0 +1,3 @@
+django
+yarl
+psycopg2-binary
