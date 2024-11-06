@@ -64,30 +64,6 @@ function App() {
     <div>
       <MapWith3DModel map={map} scene={scene} isEdit={isEditMode} setMap={handleSetMap} setBox={handleSetBox} setScene={handleSetScene} />
       <div>
-        <button onClick={() => changeObjectSize("x", 10)}>расширь по X</button>
-        <button onClick={() => changeObjectSize("x", -10)}>уменьши по X</button>
-      </div>
-      <div>
-        <button onClick={() => changeObjectSize("y", 10)}>расширь по Y</button>
-        <button onClick={() => changeObjectSize("y", -10)}>уменьши по Y</button>
-      </div>
-      <div>
-        <button onClick={() => changeObjectSize("z", 10)}>расширь по Z</button>
-        <button onClick={() => changeObjectSize("z", -10)}>уменьши по Z</button>
-      </div>
-      <div>
-        <button onClick={() => moveObject("x", 10)}>Двигать по X</button>
-        <button onClick={() => moveObject("x", -10)}>Двигать по -X</button>
-      </div>
-      <div>
-        <button onClick={() => moveObject("y", 10)}>Двигать по Y</button>
-        <button onClick={() => moveObject("y", -10)}>Двигать по -Y</button>
-      </div>
-      <div>
-        <button onClick={() => moveObject("z", 10)}>Двигать по Z</button>
-        <button onClick={() => moveObject("z", -10)}>Двигать по -Z</button>
-      </div>
-      <div>
         <button onClick={handleEditMode}>{isEditMode ? "Выключить редактирование" : "Включить редактирование"}</button>
       </div>
     </div>

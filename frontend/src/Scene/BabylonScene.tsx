@@ -82,7 +82,7 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
                 const babylonX = -(clickedMercator.x - worldOriginMercator.x) / worldScale;
                 const babylonZ = (clickedMercator.y - worldOriginMercator.y) / worldScale;
 
-                polygonCorners.push(new BABYLON.Vector2(babylonX, babylonZ + 50))
+                polygonCorners.push(new BABYLON.Vector2(babylonX + 1, babylonZ + 50))
             })
 
             const polygon = new BABYLON.PolygonMeshBuilder("polytri", polygonCorners, scene, earcut);
