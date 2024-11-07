@@ -2,9 +2,17 @@ package internal
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
+
+func DBMiddleware(db *sqlx.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set("db", db)
+		c.Next()
+	}
+}
 
 func NewPostgresDB(dsn string) (*sqlx.DB, error) {
 	db, err := sqlx.Open("postgres", dsn)
