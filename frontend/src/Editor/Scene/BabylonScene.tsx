@@ -2,24 +2,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as BABYLON from "@babylonjs/core";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import "./map.scss";
-import mapboxgl from 'mapbox-gl';
-import MapboxDraw from '@mapbox/mapbox-gl-draw';
-import earcut from 'earcut';
+import mapboxgl, { MercatorCoordinate } from 'mapbox-gl';
 
 type TMapProps = {
-    scene: undefined | BABYLON.Scene;
-    map: undefined | mapboxgl.Map;
-    isEdit: boolean;
+    worldOriginMercator: MercatorCoordinate;
+    worldScale: number;
+    worldRotate: number[];
 
     setMap: (map: mapboxgl.Map) => void;
     setScene: (scene: BABYLON.Scene) => void;
-    setBox: (box: BABYLON.Mesh) => void;
 };
 
 const MapWith3DModel: React.FC<TMapProps> = (props) => {
     const mapContainer = useRef<HTMLDivElement | null>(null);
-
-    const { map, scene, isEdit } = props;
 
     const [engine, setEngine] = useState<BABYLON.Engine>();
 
@@ -47,55 +42,6 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
             pitch: 60,
             antialias: true, // enable MSAA antialiasing
         });
-
-        const draw = new MapboxDraw({
-            displayControlsDefault: false,
-            controls: {
-                polygon: true,
-                trash: true
-            },
-            defaultMode: 'draw_polygon'
-        });
-        map.addControl(draw);
-
-        map.on('draw.create', updateArea);
-        map.on('draw.delete', updateArea);
-        map.on('draw.update', updateArea);
-
-        function updateArea(e) {
-            const data = draw.getAll();
-            const geometry = data.features[0].geometry as GeoJSON.Polygon;
-            const coordinates = geometry.coordinates[0];
-
-            console.log(coordinates)
-
-            const polygonCorners: BABYLON.Vector2[] = []
-
-            coordinates.forEach((point) => {
-                const [x, y] = point;
-
-                const clickedMercator = mapboxgl.MercatorCoordinate.fromLngLat(
-                    [x, y],
-                    worldAltitude
-                );
-
-                const babylonX = -(clickedMercator.x - worldOriginMercator.x) / worldScale;
-                const babylonZ = (clickedMercator.y - worldOriginMercator.y) / worldScale;
-
-                polygonCorners.push(new BABYLON.Vector2(babylonX + 1, babylonZ + 50))
-            })
-
-            const polygon = new BABYLON.PolygonMeshBuilder("polytri", polygonCorners, scene, earcut);
-            const extrudedPolygon = polygon.build(true, 10);
-            extrudedPolygon.position.y = 10;
-
-            extrudedPolygon.actionManager = new BABYLON.ActionManager(scene);
-            extrudedPolygon.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
-                props.setBox(extrudedPolygon);
-            }));
-
-            props.setBox(extrudedPolygon);
-        }
 
         props.setMap(map)
 
@@ -212,7 +158,7 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
         };
     }, []);
 
-    useEffect(() => {
+    /*useEffect(() => {
         if (!map || !scene) return;
 
         if (isEdit) {
@@ -224,7 +170,7 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
 
         return () => {
         };
-    }, [isEdit, scene, map])
+    }, [isEdit, scene, map])*/
 
     window.addEventListener('resize', function () {
         if (engine) {

@@ -1,19 +1,15 @@
 import './App.scss';
 import * as BABYLON from "@babylonjs/core";
-import MapWith3DModel from "./Scene/BabylonScene";
+import MapWith3DModel from "./Editor/Scene/BabylonScene";
 import { useEffect, useState } from "react";
-import mapboxgl from 'mapbox-gl';
+import Editor from './Editor';
 
 type TDimensions = "x" | "y" | "z";
 
 function App() {
-  const [map, setMap] = useState<mapboxgl.Map>();
-  const [box, setBox] = useState<BABYLON.Mesh>();
-  const [scene, setScene] = useState<BABYLON.Scene>();
-  const [material, setMaterial] = useState<BABYLON.Material>();
   const [isEditMode, setIsEditMode] = useState(false);
 
-  useEffect(() => {
+  /*useEffect(() => {
     if (box && material) {
       box.material = material;
     }
@@ -54,7 +50,7 @@ function App() {
     if (!box) return;
 
     box.position[dimension] += shift;
-  };
+  };*/
 
   const handleEditMode = () => {
     setIsEditMode(prev => !prev)
@@ -62,7 +58,7 @@ function App() {
 
   return (
     <div>
-      <MapWith3DModel map={map} scene={scene} isEdit={isEditMode} setMap={handleSetMap} setBox={handleSetBox} setScene={handleSetScene} />
+      <Editor isPlaygroundMode={isEditMode} />
       <div>
         <button onClick={handleEditMode}>{isEditMode ? "Выключить редактирование" : "Включить редактирование"}</button>
       </div>
