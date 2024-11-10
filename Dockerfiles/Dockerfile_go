@@ -1,0 +1,15 @@
+FROM golang:1.23-alpine
+
+ENV DB_DSN=postgres://postgres:postgres@db:5432/postgres?sslmode=disable&binary_parameters=yes
+
+WORKDIR /app
+
+COPY ../backend/go.mod ../backend/go.sum ./
+
+RUN go mod download
+
+COPY ../backend .
+
+RUN go build -o /app/cmd/ /app/cmd/main.go
+
+ENV GIN_MODE=release

@@ -1,0 +1,15 @@
+FROM python:3.12.2-slim-bullseye
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DB_DSN=postgres://postgres:postgres@db:5432/postgres?sslmode=disable&binary_parameters=yes
+
+WORKDIR /app
+
+COPY ../adminka/requirements.txt ./
+
+RUN apt update && \
+    apt install libpq-dev gcc -y &&  \
+    pip install -r /app/requirements.txt
+
+COPY ../adminka .
