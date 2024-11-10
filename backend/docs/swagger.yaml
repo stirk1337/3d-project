@@ -1,0 +1,67 @@
+definitions:
+  auth.signInInput:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  auth.signInResponse:
+    properties:
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzEzMjE0ODcsImp0aSI6IjEifQ.9MZ0XILeQU-zyIdWP_rcUZ20lneAg0Zo_Q_oKfhLUrA
+        type: string
+    type: object
+info:
+  contact: {}
+  title: 3d-backend API
+paths:
+  /protected/user:
+    get:
+      consumes:
+      - '*/*'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получить id текущего юзера
+      tags:
+      - auth
+  /sign-in:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User credentials
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/auth.signInInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT token
+          schema:
+            $ref: '#/definitions/auth.signInResponse'
+        "500":
+          description: Invalid input or authentication error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Авторизация
+      tags:
+      - auth
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
