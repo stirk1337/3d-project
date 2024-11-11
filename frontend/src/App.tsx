@@ -8,6 +8,7 @@ type TDimensions = "x" | "y" | "z";
 
 function App() {
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isDrawMode, setIsDrawMode] = useState(true);
 
   /*useEffect(() => {
     if (box && material) {
@@ -56,11 +57,16 @@ function App() {
     setIsEditMode(prev => !prev)
   }
 
+  const handleDrawMode = () => {
+    setIsDrawMode(prev => !prev)
+  }
+
   return (
     <div>
-      <Editor isPlaygroundMode={isEditMode} />
+      <Editor isEditMode={isEditMode} isDrawMode={isDrawMode} />
       <div>
         <button onClick={handleEditMode}>{isEditMode ? "Выключить редактирование" : "Включить редактирование"}</button>
+        <button onClick={handleDrawMode}>{isDrawMode ? "Выключить режим рисования полигона" : "Включить режим рисования полигона"}</button>
       </div>
     </div>
   );

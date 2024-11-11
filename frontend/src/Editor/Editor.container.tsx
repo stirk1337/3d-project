@@ -19,54 +19,72 @@ const worldOriginMercator = mapboxgl.MercatorCoordinate.fromLngLat(
 const worldScale = worldOriginMercator.meterInMercatorCoordinateUnits();
 
 const EditorContainer: FC<TEditorContainer> = (props) => {
-    const { objectsData } = props;
+    const { objectsData, isEditMode, isDrawMode } = props;
 
     const [babylonObjectsData, setBabylonObjectsData] = useState<TBabylonObjectData>();
     const [map, setMap] = useState<mapboxgl.Map>();
     const [scene, setScene] = useState<BABYLON.Scene>();
+    const [playground, setPlayground] = useState<TBabylonObject>()
     const [material, setMaterial] = useState<BABYLON.Material>();
     const [isDrawingZone, setDrawingZone] = useState(true);
-
-    const draw = new MapboxDraw({
-        displayControlsDefault: false,
-        controls: {
-            polygon: true,
-            trash: true
-        },
-        defaultMode: 'draw_polygon'
-    });
+    const [draw, setDraw] = useState<MapboxDraw>();
 
     const handleDrawEvent = () => {
-        handleUpdateArea(draw, isDrawingZone);
+        if (draw) handleUpdateArea(draw, isDrawingZone, playground);
     }
 
     useEffect(() => {
-        if (!map) return;
+        if (!isDrawMode) return;
 
-        if (babylonObjectsData?.playground && babylonObjectsData?.buildings.length > 0 && material) {
-            const playground = babylonObjectsData.playground.coordinates
-            const building = babylonObjectsData.buildings[0].coordinates
-            const polygonCorners = getClippedPolygon(building, playground)
-            console.log(polygonCorners)
-            const polygon = new BABYLON.PolygonMeshBuilder("polytri", polygonCorners, scene, earcut);
-            const extrudedPolygon = polygon.build(true, 30);
-            extrudedPolygon.position.y = 60;
-            extrudedPolygon.material = material;
-            extrudedPolygon.material.backFaceCulling = false;
+        setDraw(new MapboxDraw({
+            displayControlsDefault: false,
+            controls: {
+                polygon: true,
+                trash: true
+            },
+            defaultMode: 'draw_polygon'
+        }))
+    }, [isDrawMode])
+
+    useEffect(() => {
+        if (!map || !draw) return;
+
+        const drawMode = draw.options.defaultMode
+
+        if (drawMode !== 'draw_polygon') return;
+
+        if (isDrawMode) {
+            map.addControl(draw);
+        } else if (map.hasControl(draw)) {
+            map.removeControl(draw);
         }
 
-        map.addControl(draw);
+    }, [draw, isDrawMode])
+
+    useEffect(() => {
+        if (!scene) return;
+
+        if (isEditMode) scene.detachControl();
+        else scene.attachControl();
+
+    }, [isEditMode])
+
+
+    useEffect(() => {
+        if (!map || !draw) return;
 
         map.on('draw.create', handleDrawEvent);
-        map.on('draw.delete', handleDrawEvent);
+        map.on('draw.delete', () => console.log("удалил"));
         map.on('draw.update', handleDrawEvent);
 
         return () => {
-            map.off('draw.create', handleDrawEvent);
-            map.off('draw.delete', handleDrawEvent);
-            map.off('draw.update', handleDrawEvent);
+            if (map) {
+                map.off('draw.create', handleDrawEvent);
+                map.off('draw.delete', () => console.log("удалил"));
+                map.off('draw.update', handleDrawEvent);
+            }
         };
-    }, [map, isDrawingZone, babylonObjectsData]);
+    }, [map, draw, isDrawingZone, babylonObjectsData, playground]);
 
     useEffect(() => {
         if (!map || !scene || !objectsData) return;
@@ -86,8 +104,9 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
 
     useEffect(() => {
         if (!scene || !babylonObjectsData) return;
+        if (!playground) setPlayground(babylonObjectsData.playground);
         setDrawingZone(!!!babylonObjectsData.playground);
-    }, [babylonObjectsData]);
+    }, [babylonObjectsData, playground]);
 
     function handleSetMap(map: mapboxgl.Map) {
         setMap(map);
@@ -102,7 +121,6 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
     }
 
     function handleSetBuilding(box: BABYLON.Mesh, coordinates: BABYLON.Vector2[]) {
-        console.log(babylonObjectsData);
         if (!babylonObjectsData) {
             const defaultObjectData: TBabylonObjectData = {
                 playground: { mesh: box, coordinates },
@@ -120,10 +138,8 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
         });
     }
 
-    function handleUpdateArea(currentDraw: MapboxDraw, isDrawingZone: boolean) {
+    function handleUpdateArea(currentDraw: MapboxDraw, isDrawingZone: boolean, playground?: TBabylonObject) {
         if (!currentDraw || !map) return;
-
-        console.log("В фунции", isDrawingZone);
 
         const data = currentDraw.getAll();
 
@@ -131,7 +147,7 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
         const coordinates = geometry.coordinates[0];
         if (coordinates[0] === null) return;
 
-        const polygonCorners: BABYLON.Vector2[] = [];
+        let polygonCorners: BABYLON.Vector2[] = [];
 
         coordinates.forEach((point) => {
             console.trace();
@@ -145,7 +161,7 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
             polygonCorners.push(new BABYLON.Vector2(babylonX + 0.5, babylonZ + 49));
         });
 
-        console.log(polygonCorners)
+        if (playground) polygonCorners = getClippedPolygon(polygonCorners, playground.coordinates)
 
         const polygon = new BABYLON.PolygonMeshBuilder("polytri", polygonCorners, scene, earcut);
 
@@ -156,7 +172,32 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
 
         extrudedPolygon.actionManager = new BABYLON.ActionManager(scene);
         extrudedPolygon.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
-            //props.setBox(extrudedPolygon);
+            if (!draw) return; // Проверка на существование draw
+
+            const newDraw = new MapboxDraw({
+                displayControlsDefault: false,
+                defaultMode: 'simple_select'
+            })
+
+            const coordinates = polygonCorners.map(corner => {
+                const mercatorX = -(corner.x - 0.5) * worldScale + worldOriginMercator.x;
+                const mercatorY = (corner.y - 49) * worldScale + worldOriginMercator.y;
+                const mercatorCoordinate = new mapboxgl.MercatorCoordinate(mercatorX, mercatorY, worldAltitude);
+                const lngLat = mercatorCoordinate.toLngLat();
+                return [lngLat.lng, lngLat.lat];
+            });
+
+            const polygonFeature = {
+                type: "Feature",
+                geometry: {
+                    type: "Polygon",
+                    coordinates: [coordinates]
+                },
+                properties: {}
+            };
+            map.addControl(newDraw);
+            newDraw.add(polygonFeature as GeoJSON.Feature);
+            setDraw(newDraw);
         }));
 
         map.removeControl(currentDraw);

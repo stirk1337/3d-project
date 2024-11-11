@@ -2,7 +2,8 @@ import * as BABYLON from "@babylonjs/core";
 
 export type TEditorContainer = {
     objectsData?: TObjectData;
-    isPlaygroundMode: boolean;
+    isEditMode: boolean;
+    isDrawMode: boolean;
 }
 
 export type TObjectData = {
