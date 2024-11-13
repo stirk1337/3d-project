@@ -1,10 +1,13 @@
 import earcut from "earcut";
-import { TPoint } from "./Editor.types";
+import { TBabylonObject, TPoint } from "./Editor.types";
 import * as BABYLON from "@babylonjs/core";
 import { Vector2 } from "@babylonjs/core";
+import mapboxgl from "mapbox-gl";
+import { worldAltitude, worldOriginMercator, worldScale } from "./Editor.container";
+import * as turf from '@turf/turf';
 
 export function getBabylonMeshFromCoordinates(id: number, coordinates: TPoint[], scene: BABYLON.Scene, depth: number): [BABYLON.Mesh, BABYLON.Vector2[]] {
-    const polygonCorners: BABYLON.Vector2[] = []
+    let polygonCorners: BABYLON.Vector2[] = []
 
     coordinates.forEach((point) => {
         const { x, y } = point;
@@ -27,73 +30,49 @@ export function getBabylonMeshFromCoordinates(id: number, coordinates: TPoint[],
     return [extrudedPolygon, polygonCorners];
 }
 
-// Проверяем, находится ли точка внутри полигона (плоскости)
-export function isPointInsidePolygon(point: Vector2, polygon: Vector2[]): boolean {
-    let intersects = 0;
-    for (let i = 0; i < polygon.length; i++) {
-        const a = polygon[i];
-        const b = polygon[(i + 1) % polygon.length];
+export function getPolygonCorners(currentDraw: MapboxDraw, playground?: TBabylonObject | undefined): BABYLON.Vector2[] | undefined {
+    const data = currentDraw.getAll();
 
-        if (((a.y > point.y) !== (b.y > point.y)) &&
-            (point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x)) {
-            intersects++;
-        }
-    }
-    return intersects % 2 === 1; // Точка внутри, если число пересечений нечетное
+    const geometry = data.features[0].geometry as GeoJSON.Polygon;
+    const coordinates = geometry.coordinates[0];
+    if (coordinates[0] === null) return;
+
+    let polygonCorners: BABYLON.Vector2[] = [];
+
+    coordinates.forEach((point) => {
+        const [x, y] = point;
+
+        const clickedMercator = mapboxgl.MercatorCoordinate.fromLngLat([x, y], worldAltitude);
+
+        const babylonX = -(clickedMercator.x - worldOriginMercator.x) / worldScale;
+        const babylonZ = (clickedMercator.y - worldOriginMercator.y) / worldScale;
+
+        polygonCorners.push(new BABYLON.Vector2(babylonX + 0.5, babylonZ + 49));
+    });
+
+    let clippedCorners: BABYLON.Vector2[] = []
+
+    if (playground) clippedCorners = getClippedPolygon(polygonCorners, playground.coordinates)
+
+    return clippedCorners.length !== 0 ? clippedCorners : polygonCorners;
 }
 
-// Алгоритм Сазерленда-Ходжмана для отсечения полигона объектом по границе плоскости
 export function getClippedPolygon(subjectPolygon: Vector2[], clipPolygon: Vector2[]): Vector2[] {
-    let outputList = [...subjectPolygon];
+    const subjectCoords = subjectPolygon.map(point => [point.x, point.y]);
+    const clipCoords = clipPolygon.map(point => [point.x, point.y]);
 
-    for (let i = 0; i < clipPolygon.length; i++) {
-        const clipEdgeStart = clipPolygon[i];
-        const clipEdgeEnd = clipPolygon[(i + 1) % clipPolygon.length];
+    const subjectFeature = turf.polygon([subjectCoords]);
+    const clipFeature = turf.polygon([clipCoords]);
 
-        if (clipEdgeStart.x === clipEdgeEnd.x && clipEdgeStart.y === clipEdgeEnd.y)
-            continue;
+    const featureCollection = turf.featureCollection([subjectFeature, clipFeature]);
 
-        const inputList = [...outputList];
-        outputList = [];
+    const intersection = turf.intersect(featureCollection);
 
-        let prevPoint = inputList[inputList.length - 1];
-        for (const point of inputList) {
-            if (isInsideClipEdge(point, clipEdgeStart, clipEdgeEnd)) {
-                if (!isInsideClipEdge(prevPoint, clipEdgeStart, clipEdgeEnd)) {
-                    const crossPoint = intersect(prevPoint, point, clipEdgeStart, clipEdgeEnd)
-                    if (crossPoint) outputList.push(crossPoint);
-                }
-                outputList.push(point);
-            } else if (isInsideClipEdge(prevPoint, clipEdgeStart, clipEdgeEnd)) {
-                const crossPoint = intersect(prevPoint, point, clipEdgeStart, clipEdgeEnd)
-                if (crossPoint) outputList.push(crossPoint);
-            }
-            prevPoint = point;
-        }
+    if (!intersection) {
+        console.log("Полигон не пересекается с отсекателем.");
+        return [];
     }
-    return outputList;
-}
 
-// Проверка, находится ли точка внутри текущей стороны отсечения
-export function isInsideClipEdge(point: Vector2, edgeStart: Vector2, edgeEnd: Vector2): boolean {
-    if (edgeStart.x === edgeEnd.x && edgeStart.y === edgeEnd.y) return false;
-    return (
-        (edgeEnd.x - edgeStart.x) * (point.y - edgeStart.y) >
-        (edgeEnd.y - edgeStart.y) * (point.x - edgeStart.x)
-    );
-}
-
-// Функция нахождения точки пересечения двух отрезков
-function intersect(p1: Vector2, p2: Vector2, clipStart: Vector2, clipEnd: Vector2): Vector2 | null {
-    const dc = { x: clipStart.x - clipEnd.x, y: clipStart.y - clipEnd.y };
-    const dp = { x: p1.x - p2.x, y: p1.y - p2.y };
-    const n1 = clipStart.x * clipEnd.y - clipStart.y * clipEnd.x;
-    const n2 = p1.x * p2.y - p1.y * p2.x;
-    const denom = dc.x * dp.y - dc.y * dp.x;
-
-    if (denom === 0) return null;
-
-    const intersectX = (n1 * dp.x - n2 * dc.x) / denom;
-    const intersectY = (n1 * dp.y - n2 * dc.y) / denom;
-    return new Vector2(intersectX, intersectY);
+    const clippedCoords = intersection.geometry.coordinates[0] as [number, number][];
+    return clippedCoords.map(([x, y]) => new Vector2(x, y));
 }
