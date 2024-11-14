@@ -1,9 +1,18 @@
 import * as BABYLON from "@babylonjs/core";
+import { TBabylonObject, TBabylonObjectPlayground } from "../VisualEditor/VisualEditor.types";
 
 export type TEditorContainer = {
     objectsData?: TObjectData;
     isEditMode: boolean;
     isDrawMode: boolean;
+    currentElement: BABYLON.Mesh | undefined;
+    draw: MapboxDraw | undefined;
+    map: mapboxgl.Map | undefined;
+
+    handleMap: (map: mapboxgl.Map) => void;
+    handleMaterial: (material: BABYLON.Material) => void;
+    handleCurrentElement: (polygonData: TBabylonObject) => void;
+    handleDraw: (draw?: MapboxDraw) => void;
 }
 
 export type TObjectData = {
@@ -35,11 +44,6 @@ export type TPoint = {
 export type TDimensions = "x" | "y" | "z";
 
 export type TBabylonObjectData = {
-    playground: TBabylonObject;
+    playground: TBabylonObjectPlayground;
     buildings: TBabylonObject[];
-}
-
-export type TBabylonObject = {
-    mesh: BABYLON.Mesh;
-    coordinates: BABYLON.Vector2[];
 }

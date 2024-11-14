@@ -1,11 +1,12 @@
 import { FC, useEffect, useState } from "react";
-import { TBabylonObject, TBabylonObjectData, TEditorContainer } from "./Editor.types";
+import { TBabylonObjectData, TEditorContainer } from "./Editor.types";
 import MapWith3DModel from "./Scene/BabylonScene";
 import * as BABYLON from "@babylonjs/core";
 import { getBabylonMeshFromCoordinates, getClippedPolygon, getPolygonCorners } from "./Editor.services";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import mapboxgl from "mapbox-gl";
 import earcut from "earcut";
+import { TBabylonObject, TBabylonObjectPlayground } from "../VisualEditor/VisualEditor.types";
 
 export const worldOrigin = [148.9819, -35.39847];
 export const worldAltitude = 0;
@@ -19,16 +20,12 @@ export const worldOriginMercator = mapboxgl.MercatorCoordinate.fromLngLat(
 export const worldScale = worldOriginMercator.meterInMercatorCoordinateUnits();
 
 const EditorContainer: FC<TEditorContainer> = (props) => {
-    const { objectsData, isEditMode, isDrawMode } = props;
+    const { objectsData, isEditMode, isDrawMode, currentElement, draw, map } = props;
 
     const [babylonObjectsData, setBabylonObjectsData] = useState<TBabylonObjectData>();
-    const [map, setMap] = useState<mapboxgl.Map>();
     const [scene, setScene] = useState<BABYLON.Scene>();
-    const [playground, setPlayground] = useState<TBabylonObject>()
-    const [material, setMaterial] = useState<BABYLON.Material>();
+    const [playground, setPlayground] = useState<TBabylonObjectPlayground>()
     const [isDrawingZone, setDrawingZone] = useState(true);
-    const [draw, setDraw] = useState<MapboxDraw>();
-    const [currentElement, setCurrentElement] = useState<BABYLON.Mesh>();
 
     console.log(babylonObjectsData)
 
@@ -41,7 +38,7 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
     useEffect(() => {
         if (!isDrawMode) return;
 
-        setDraw(new MapboxDraw({
+        props.handleDraw(new MapboxDraw({
             displayControlsDefault: false,
             controls: {
                 polygon: true,
@@ -62,7 +59,7 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
             map.addControl(draw);
         } else if (map.hasControl(draw)) {
             map.removeControl(draw);
-            setDraw(undefined)
+            props.handleDraw()
         }
 
     }, [draw, isDrawMode])
@@ -70,8 +67,8 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
     useEffect(() => {
         if (!scene) return;
 
-        if (isEditMode) scene.detachControl();
-        else scene.attachControl();
+        if (isEditMode) scene.attachControl();
+        else scene.detachControl();
 
     }, [isEditMode])
 
@@ -90,7 +87,7 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
                 map.off('draw.update', handleDrawEvent);
             }
         };
-    }, [map, draw, isDrawingZone, babylonObjectsData, playground]);
+    }, [map, draw, isDrawingZone, babylonObjectsData, playground, currentElement]);
 
     useEffect(() => {
         if (!map || !scene || !objectsData) return;
@@ -114,16 +111,12 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
         setDrawingZone(!!!babylonObjectsData.playground);
     }, [babylonObjectsData, playground]);
 
-    function handleSetMap(map: mapboxgl.Map) {
-        setMap(map);
-    }
-
     function handleSetScene(scene: BABYLON.Scene) {
         setScene(scene);
 
         const newMaterial = new BABYLON.StandardMaterial("boxMaterial", scene);
         newMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0);
-        setMaterial(newMaterial);
+        props.handleMaterial(newMaterial);
     }
 
     function handleSetBuilding(box: BABYLON.Mesh, coordinates: BABYLON.Vector2[]) {
@@ -140,11 +133,11 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
 
         setBabylonObjectsData({
             ...babylonObjectsData,
-            buildings: [...babylonObjectsData.buildings, { mesh: box, coordinates }]
+            buildings: [...babylonObjectsData.buildings, { mesh: box, coordinates, floors: 1, floorsHeight: 10 }]
         });
     }
 
-    function handleUpdateArea(currentDraw: MapboxDraw, isDrawingZone: boolean, playground?: TBabylonObject) {
+    function handleUpdateArea(currentDraw: MapboxDraw, isDrawingZone: boolean, playground?: TBabylonObjectPlayground) {
         if (!currentDraw || !map) return;
 
         const polygonCorners = getPolygonCorners(currentDraw, playground);
@@ -153,51 +146,38 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
 
         const polygon = new BABYLON.PolygonMeshBuilder("polytri", polygonCorners, scene, earcut);
 
-        const extrudedPolygon = polygon.build(true, isDrawingZone ? 0.1 : 10);
-        extrudedPolygon.position.y = isDrawingZone ? 0.1 : 10;
+        const polygonHeight = isDrawingZone ? 0.1 : 10
+
+        const extrudedPolygon = polygon.build(true, polygonHeight);
+        extrudedPolygon.position.y = polygonHeight;
         extrudedPolygon.material = new BABYLON.StandardMaterial("material", scene);
         extrudedPolygon.material.backFaceCulling = false;
 
         extrudedPolygon.actionManager = new BABYLON.ActionManager(scene);
-        extrudedPolygon.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, () => handleClickMesh(polygonCorners, extrudedPolygon)));
+
+        const polygonData: TBabylonObject = {
+            mesh: extrudedPolygon,
+            coordinates: polygonCorners,
+            floors: 1,
+            floorsHeight: polygonHeight
+        }
+
+        extrudedPolygon.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, () => props.handleCurrentElement(polygonData)));
 
         map.removeControl(currentDraw);
-        setDraw(undefined);
+        props.handleDraw()
+
+        if (!isDrawingZone) props.handleCurrentElement(polygonData)
 
         handleSetBuilding(extrudedPolygon, polygonCorners);
     }
 
-    function handleClickMesh(polygonCorners: BABYLON.Vector2[], polygon: BABYLON.Mesh) {
+    function handleClickMesh(polygonData: TBabylonObject) {
         if (!draw || !map) return;
-
-        const newDraw = new MapboxDraw({
-            displayControlsDefault: false,
-            defaultMode: 'simple_select'
-        })
-
-        const coordinates = polygonCorners.map(corner => {
-            const mercatorX = -(corner.x - 0.5) * worldScale + worldOriginMercator.x;
-            const mercatorY = (corner.y - 49) * worldScale + worldOriginMercator.y;
-            const mercatorCoordinate = new mapboxgl.MercatorCoordinate(mercatorX, mercatorY, worldAltitude);
-            const lngLat = mercatorCoordinate.toLngLat();
-            return [lngLat.lng, lngLat.lat];
-        });
-
-        const polygonFeature = {
-            type: "Feature",
-            geometry: {
-                type: "Polygon",
-                coordinates: [coordinates]
-            },
-            properties: {}
-        };
-        map.addControl(newDraw);
-        newDraw.add(polygonFeature as GeoJSON.Feature);
-        setDraw(newDraw);
-        setCurrentElement(polygon)
+        props.handleCurrentElement(polygonData);
     }
 
-    function handleEditPolygon(currentDraw: MapboxDraw, currentElement: BABYLON.Mesh, playground?: TBabylonObject) {
+    function handleEditPolygon(currentDraw: MapboxDraw, currentElement: BABYLON.Mesh, playground?: TBabylonObjectPlayground) {
         if (!map || !babylonObjectsData) return;
 
         const { meshData, isPlayground } = findMeshData(babylonObjectsData, currentElement);
@@ -207,7 +187,7 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
         if (!polygonCorners) return;
 
         const extrudedPolygon = createExtrudedPolygon(polygonCorners, isPlayground ? 0.1 : 10);
-        setPolygonClickAction(extrudedPolygon, polygonCorners);
+        setPolygonClickAction(extrudedPolygon, polygonCorners, meshData as TBabylonObject);
 
         let updatedBuildings = babylonObjectsData.buildings;
         if (isPlayground) {
@@ -216,6 +196,7 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
         }
 
         updateBabylonObjectsState(isPlayground, currentElement, extrudedPolygon, polygonCorners, updatedBuildings);
+        props.handleCurrentElement({ ...meshData as TBabylonObject, mesh: extrudedPolygon, coordinates: polygonCorners })
         disposeCurrentMesh(currentElement);
 
         cleanupDrawControl(map, currentDraw);
@@ -223,7 +204,7 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
 
     function findMeshData(babylonObjectsData: TBabylonObjectData, currentElement: BABYLON.Mesh) {
         let isPlayground = false;
-        let meshData: TBabylonObject | null = null;
+        let meshData: TBabylonObject | TBabylonObjectPlayground | null = null;
 
         if (babylonObjectsData.playground.mesh.uniqueId === currentElement.uniqueId) {
             meshData = babylonObjectsData.playground;
@@ -248,10 +229,10 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
         return extrudedPolygon;
     }
 
-    function setPolygonClickAction(polygon: BABYLON.Mesh, corners: BABYLON.Vector2[]) {
+    function setPolygonClickAction(polygon: BABYLON.Mesh, corners: BABYLON.Vector2[], buildingData: TBabylonObject) {
         polygon.actionManager = new BABYLON.ActionManager(scene);
         polygon.actionManager.registerAction(
-            new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, () => handleClickMesh(corners, polygon))
+            new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, () => handleClickMesh({ ...buildingData, mesh: polygon, coordinates: corners }))
         );
     }
 
@@ -261,11 +242,12 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
             if (!buildingCorners || buildingCorners.length === 0) return buildingData;
 
             const updatedPolygon = createExtrudedPolygon(buildingCorners, 10);
-            setPolygonClickAction(updatedPolygon, buildingCorners);
+            setPolygonClickAction(updatedPolygon, buildingCorners, buildingData);
 
             buildingData.mesh.dispose();
 
             return {
+                ...buildingData,
                 coordinates: buildingCorners,
                 mesh: updatedPolygon,
             };
@@ -303,17 +285,16 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
 
     function disposeCurrentMesh(mesh: BABYLON.Mesh) {
         mesh.dispose();
-        setCurrentElement(undefined);
     }
 
     function cleanupDrawControl(map: mapboxgl.Map, currentDraw: MapboxDraw) {
         map.removeControl(currentDraw);
-        setDraw(undefined);
+        props.handleDraw()
     }
 
 
     return (
-        <MapWith3DModel worldOriginMercator={worldOriginMercator} worldScale={worldScale} worldRotate={worldRotate} setMap={handleSetMap} setScene={handleSetScene} />
+        <MapWith3DModel worldOriginMercator={worldOriginMercator} worldScale={worldScale} worldRotate={worldRotate} setMap={props.handleMap} setScene={handleSetScene} />
     );
 }
 

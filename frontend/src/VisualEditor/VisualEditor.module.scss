@@ -1,0 +1,30 @@
+.editor {
+    display: flex;
+    justify-content: space-between;
+
+    &__controls {
+        position: relative;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        &__button {
+            padding: 10px;
+            font-size: 20px;
+            height: fit-content;
+            width: 200px;
+        }
+    }
+
+    &__current_controls {
+        background-color: white;
+        padding: 20px;
+        position: relative;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        width: 200px;
+        gap: 10px;
+    }
+}

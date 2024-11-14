@@ -13,6 +13,7 @@
     "@babylonjs/core": "^7.27.0",
     "@mapbox/mapbox-gl-draw": "^1.4.3",
     "@maptiler/sdk": "^2.3.0",
+    "@turf/turf": "^7.1.0",
     "@types/babylon": "^6.16.9",
     "@types/earcut": "^2.1.4",
     "@types/mapbox__mapbox-gl-draw": "^1.4.8",

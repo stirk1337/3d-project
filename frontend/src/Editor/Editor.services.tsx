@@ -1,10 +1,11 @@
 import earcut from "earcut";
-import { TBabylonObject, TPoint } from "./Editor.types";
+import { TPoint } from "./Editor.types";
 import * as BABYLON from "@babylonjs/core";
 import { Vector2 } from "@babylonjs/core";
 import mapboxgl from "mapbox-gl";
 import { worldAltitude, worldOriginMercator, worldScale } from "./Editor.container";
 import * as turf from '@turf/turf';
+import { TBabylonObjectPlayground } from "../VisualEditor/VisualEditor.types";
 
 export function getBabylonMeshFromCoordinates(id: number, coordinates: TPoint[], scene: BABYLON.Scene, depth: number): [BABYLON.Mesh, BABYLON.Vector2[]] {
     let polygonCorners: BABYLON.Vector2[] = []
@@ -30,7 +31,7 @@ export function getBabylonMeshFromCoordinates(id: number, coordinates: TPoint[],
     return [extrudedPolygon, polygonCorners];
 }
 
-export function getPolygonCorners(currentDraw: MapboxDraw, playground?: TBabylonObject | undefined): BABYLON.Vector2[] | undefined {
+export function getPolygonCorners(currentDraw: MapboxDraw, playground?: TBabylonObjectPlayground | undefined): BABYLON.Vector2[] | undefined {
     const data = currentDraw.getAll();
 
     const geometry = data.features[0].geometry as GeoJSON.Polygon;
