@@ -7,10 +7,12 @@ export type TEditorContainer = {
     isDrawMode: boolean;
     currentElement: BABYLON.Mesh | undefined;
     draw: MapboxDraw | undefined;
+    scene: BABYLON.Scene | undefined;
     map: mapboxgl.Map | undefined;
 
+    handleScene: (scene: BABYLON.Scene) => void;
     handleMap: (map: mapboxgl.Map) => void;
-    handleMaterial: (material: BABYLON.Material) => void;
+    handleMaterial: (material: BABYLON.Material[]) => void;
     handleCurrentElement: (polygonData: TBabylonObject) => void;
     handleDraw: (draw?: MapboxDraw) => void;
 }

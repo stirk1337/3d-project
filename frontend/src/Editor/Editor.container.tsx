@@ -2,7 +2,7 @@ import { FC, useEffect, useState } from "react";
 import { TBabylonObjectData, TEditorContainer } from "./Editor.types";
 import MapWith3DModel from "./Scene/BabylonScene";
 import * as BABYLON from "@babylonjs/core";
-import { getBabylonMeshFromCoordinates, getClippedPolygon, getPolygonCorners } from "./Editor.services";
+import { createExtrudedPolygon, getBabylonMeshFromCoordinates, getClippedPolygon, getPolygonCorners } from "./Editor.services";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import mapboxgl from "mapbox-gl";
 import earcut from "earcut";
@@ -20,10 +20,9 @@ export const worldOriginMercator = mapboxgl.MercatorCoordinate.fromLngLat(
 export const worldScale = worldOriginMercator.meterInMercatorCoordinateUnits();
 
 const EditorContainer: FC<TEditorContainer> = (props) => {
-    const { objectsData, isEditMode, isDrawMode, currentElement, draw, map } = props;
+    const { objectsData, isEditMode, isDrawMode, currentElement, draw, map, scene } = props;
 
     const [babylonObjectsData, setBabylonObjectsData] = useState<TBabylonObjectData>();
-    const [scene, setScene] = useState<BABYLON.Scene>();
     const [playground, setPlayground] = useState<TBabylonObjectPlayground>()
     const [isDrawingZone, setDrawingZone] = useState(true);
 
@@ -31,6 +30,8 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
 
     const handleDrawEvent = () => {
         if (!draw) return;
+
+        console.log(isDrawMode)
 
         currentElement ? handleEditPolygon(draw, currentElement, playground) : handleUpdateArea(draw, isDrawingZone, playground);
     }
@@ -112,11 +113,13 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
     }, [babylonObjectsData, playground]);
 
     function handleSetScene(scene: BABYLON.Scene) {
-        setScene(scene);
+        props.handleScene(scene);
 
-        const newMaterial = new BABYLON.StandardMaterial("boxMaterial", scene);
-        newMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0);
-        props.handleMaterial(newMaterial);
+        const defaultMaterial = new BABYLON.StandardMaterial("defaultMaterial", scene);
+        defaultMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+        const currentMaterial = new BABYLON.StandardMaterial("boxMaterial", scene);
+        currentMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0);
+        props.handleMaterial([defaultMaterial, currentMaterial]);
     }
 
     function handleSetBuilding(box: BABYLON.Mesh, coordinates: BABYLON.Vector2[]) {
@@ -186,7 +189,7 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
         const polygonCorners = getPolygonCorners(currentDraw, !isPlayground ? playground : undefined);
         if (!polygonCorners) return;
 
-        const extrudedPolygon = createExtrudedPolygon(polygonCorners, isPlayground ? 0.1 : 10);
+        const extrudedPolygon = createExtrudedPolygon(polygonCorners, isPlayground ? 0.1 : 10, scene);
         setPolygonClickAction(extrudedPolygon, polygonCorners, meshData as TBabylonObject);
 
         let updatedBuildings = babylonObjectsData.buildings;
@@ -220,15 +223,6 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
         return { meshData, isPlayground };
     }
 
-    function createExtrudedPolygon(corners: BABYLON.Vector2[], height: number) {
-        const polygon = new BABYLON.PolygonMeshBuilder("polytri", corners, scene, earcut);
-        const extrudedPolygon = polygon.build(true, height);
-        extrudedPolygon.position.y = height;
-        extrudedPolygon.material = new BABYLON.StandardMaterial("material", scene);
-        extrudedPolygon.material.backFaceCulling = false;
-        return extrudedPolygon;
-    }
-
     function setPolygonClickAction(polygon: BABYLON.Mesh, corners: BABYLON.Vector2[], buildingData: TBabylonObject) {
         polygon.actionManager = new BABYLON.ActionManager(scene);
         polygon.actionManager.registerAction(
@@ -241,7 +235,8 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
             const buildingCorners = getClippedPolygon(buildingData.coordinates, playgroundCorners);
             if (!buildingCorners || buildingCorners.length === 0) return buildingData;
 
-            const updatedPolygon = createExtrudedPolygon(buildingCorners, 10);
+            const updatedPolygon = createExtrudedPolygon(buildingCorners, 10, scene);
+
             setPolygonClickAction(updatedPolygon, buildingCorners, buildingData);
 
             buildingData.mesh.dispose();

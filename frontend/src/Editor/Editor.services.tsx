@@ -77,3 +77,13 @@ export function getClippedPolygon(subjectPolygon: Vector2[], clipPolygon: Vector
     const clippedCoords = intersection.geometry.coordinates[0] as [number, number][];
     return clippedCoords.map(([x, y]) => new Vector2(x, y));
 }
+
+export function createExtrudedPolygon(corners: BABYLON.Vector2[], height: number, scene: BABYLON.Scene | undefined) {
+    const polygon = new BABYLON.PolygonMeshBuilder("polytri", corners, scene, earcut);
+    const extrudedPolygon = polygon.build(true, height);
+    extrudedPolygon.position.y = height;
+    extrudedPolygon.material = new BABYLON.StandardMaterial("material", scene);
+    extrudedPolygon.material.backFaceCulling = false;
+
+    return extrudedPolygon;
+}
