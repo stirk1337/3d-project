@@ -4,7 +4,7 @@ import { TVisualEditorView } from "./VisualEditor.types";
 import styles from "./VisualEditor.module.scss"
 
 const VisualEditorView: FC<TVisualEditorView> = (props) => {
-    const { isEditMode, isDrawMode, currentElement, draw, map, scene, floorsCount, floorsHeight } = props;
+    const { isEditMode, isDrawMode, currentElement, draw, map, scene, floorsCount, floorsHeight, currentSquare } = props;
 
     return (
         <div className={styles.editor}>
@@ -29,8 +29,11 @@ const VisualEditorView: FC<TVisualEditorView> = (props) => {
                 <div className={styles.editor__current_controls}>
                     <button className={styles.editor__controls__button} onClick={() => props.clearCurrentElement()}>Закончить редактирование</button>
                     <button className={styles.editor__controls__button} onClick={() => props.handleEditCurrentElement()}>Редактировать объект</button>
-                    <input type="number" placeholder="Количество этажей" onChange={props.handleFloorsCount} value={floorsCount}></input>
-                    <input type="number" placeholder="Высота одного этажа" onChange={props.handleFloorsHeight} value={floorsHeight}></input>
+                    <label htmlFor="floorsCount">Количество этажей</label>
+                    <input id="floorsCount" type="number" onChange={props.handleFloorsCount} value={floorsCount}></input>
+                    <label htmlFor="floorsHeight">Количество этажей</label>
+                    <input id="floorsHeight" type="number" placeholder="Высота одного этажа" onChange={props.handleFloorsHeight} value={floorsHeight}></input>
+                    <p>Площадь: {currentSquare}</p>
                 </div>
             )}
         </div>

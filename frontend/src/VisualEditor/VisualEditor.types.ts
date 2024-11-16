@@ -11,6 +11,7 @@ export type TVisualEditorView = {
     map: mapboxgl.Map | undefined;
     floorsCount: number;
     floorsHeight: number;
+    currentSquare: number;
 
     handleScene: (scene: BABYLON.Scene) => void;
     handleMap: (map: mapboxgl.Map) => void;

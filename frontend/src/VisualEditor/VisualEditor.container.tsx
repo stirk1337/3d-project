@@ -5,8 +5,8 @@ import { TBabylonObject } from "./VisualEditor.types";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import { worldAltitude, worldOriginMercator, worldScale } from "../Editor/Editor.container";
 import mapboxgl from "mapbox-gl";
-import { createExtrudedPolygon } from "../Editor/Editor.services";
 import earcut from "earcut";
+import { calculateBasePolygonArea } from "./VisualEditor.service";
 
 const VisualEditorContainer: FC = (props) => {
     const [scene, setScene] = useState<BABYLON.Scene>();
@@ -18,6 +18,7 @@ const VisualEditorContainer: FC = (props) => {
     const [draw, setDraw] = useState<MapboxDraw>();
     const [floorsCount, setFloorsCount] = useState(0);
     const [floorsHeight, setFloorsHeight] = useState(0);
+    const [currentSquare, setCurrentSquare] = useState(0);
 
     const handleScene = (scene: BABYLON.Scene) => {
         setScene(scene)
@@ -46,6 +47,7 @@ const VisualEditorContainer: FC = (props) => {
         setCurrentElement(polygonData)
         setFloorsCount(polygonData.floors)
         setFloorsHeight(polygonData.floorsHeight)
+        setCurrentSquare(calculateBasePolygonArea(polygonData.coordinates))
     }
 
     const handleFloorsCount = (event: ChangeEvent<HTMLInputElement>) => {
@@ -146,6 +148,7 @@ const VisualEditorContainer: FC = (props) => {
             map={map}
             floorsCount={floorsCount}
             floorsHeight={floorsHeight}
+            currentSquare={currentSquare}
             handleScene={handleScene}
             handleMap={handleMap}
             handleMaterial={handleMaterial}
