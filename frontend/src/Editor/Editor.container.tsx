@@ -202,7 +202,7 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
         }
 
         updateBabylonObjectsState(isPlayground, mesh, extrudedPolygon, polygonCorners, updatedBuildings);
-        props.handleCurrentElement({ ...meshData as TBabylonObject, mesh: extrudedPolygon, coordinates: polygonCorners })
+        props.handleCurrentElement({ ...currentElement, mesh: extrudedPolygon, coordinates: polygonCorners })
         disposeCurrentMesh(mesh);
 
         cleanupDrawControl(map, currentDraw);
