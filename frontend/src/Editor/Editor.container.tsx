@@ -180,16 +180,19 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
         props.handleCurrentElement(polygonData);
     }
 
-    function handleEditPolygon(currentDraw: MapboxDraw, currentElement: BABYLON.Mesh, playground?: TBabylonObjectPlayground) {
+    function handleEditPolygon(currentDraw: MapboxDraw, currentElement: TBabylonObject, playground?: TBabylonObjectPlayground) {
         if (!map || !babylonObjectsData) return;
 
-        const { meshData, isPlayground } = findMeshData(babylonObjectsData, currentElement);
+        const mesh = currentElement.mesh;
+        const meshHeight = currentElement.floors * currentElement.floorsHeight;
+
+        const { meshData, isPlayground } = findMeshData(babylonObjectsData, mesh);
         if (!meshData) return;
 
         const polygonCorners = getPolygonCorners(currentDraw, !isPlayground ? playground : undefined);
         if (!polygonCorners) return;
 
-        const extrudedPolygon = createExtrudedPolygon(polygonCorners, isPlayground ? 0.1 : 10, scene);
+        const extrudedPolygon = createExtrudedPolygon(polygonCorners, isPlayground ? 0.1 : meshHeight, scene);
         setPolygonClickAction(extrudedPolygon, polygonCorners, meshData as TBabylonObject);
 
         let updatedBuildings = babylonObjectsData.buildings;
@@ -198,9 +201,9 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
             setPlayground({ coordinates: polygonCorners, mesh: extrudedPolygon });
         }
 
-        updateBabylonObjectsState(isPlayground, currentElement, extrudedPolygon, polygonCorners, updatedBuildings);
+        updateBabylonObjectsState(isPlayground, mesh, extrudedPolygon, polygonCorners, updatedBuildings);
         props.handleCurrentElement({ ...meshData as TBabylonObject, mesh: extrudedPolygon, coordinates: polygonCorners })
-        disposeCurrentMesh(currentElement);
+        disposeCurrentMesh(mesh);
 
         cleanupDrawControl(map, currentDraw);
     }

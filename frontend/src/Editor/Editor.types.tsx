@@ -5,7 +5,7 @@ export type TEditorContainer = {
     objectsData?: TObjectData;
     isEditMode: boolean;
     isDrawMode: boolean;
-    currentElement: BABYLON.Mesh | undefined;
+    currentElement: TBabylonObject | undefined;
     draw: MapboxDraw | undefined;
     scene: BABYLON.Scene | undefined;
     map: mapboxgl.Map | undefined;

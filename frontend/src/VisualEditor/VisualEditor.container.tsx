@@ -86,6 +86,10 @@ const VisualEditorContainer: FC = (props) => {
             new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, () => setCurrentElement({ ...currentElement, mesh: extrudedPolygon }))
         );
 
+        extrudedPolygon.uniqueId = currentElement.mesh.uniqueId;
+
+        currentElement.mesh.dispose();
+
         setCurrentElement({ ...currentElement, mesh: extrudedPolygon, floors, floorsHeight: height })
     }
 
@@ -142,7 +146,7 @@ const VisualEditorContainer: FC = (props) => {
         <VisualEditorView
             isDrawMode={isDrawMode}
             isEditMode={isEditMode}
-            currentElement={currentElement?.mesh}
+            currentElement={currentElement}
             draw={draw}
             scene={scene}
             map={map}
