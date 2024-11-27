@@ -7,6 +7,7 @@ import { worldAltitude, worldOriginMercator, worldScale } from "../Editor/Editor
 import mapboxgl from "mapbox-gl";
 import earcut from "earcut";
 import { calculateBasePolygonArea } from "./VisualEditor.service";
+import { TBabylonObjectData } from "../Editor/Editor.types";
 
 const VisualEditorContainer: FC = (props) => {
     const [scene, setScene] = useState<BABYLON.Scene>();
@@ -14,6 +15,7 @@ const VisualEditorContainer: FC = (props) => {
     const [material, setMaterial] = useState<BABYLON.Material[]>();
     const [isEditMode, setIsEditMode] = useState(false);
     const [isDrawMode, setIsDrawMode] = useState(true);
+    const [babylonObjectsData, setBabylonObjectsData] = useState<TBabylonObjectData>();
     const [currentElement, setCurrentElement] = useState<TBabylonObject>();
     const [draw, setDraw] = useState<MapboxDraw>();
     const [floorsCount, setFloorsCount] = useState(0);
@@ -38,6 +40,10 @@ const VisualEditorContainer: FC = (props) => {
 
     const handleDrawMode = () => {
         setIsDrawMode(prev => !prev)
+    }
+
+    const handleBabylonObjectsDataChange = (babylonObjectsData: TBabylonObjectData) => {
+        setBabylonObjectsData(babylonObjectsData)
     }
 
     const handleCurrentElement = (polygonData: TBabylonObject) => {
@@ -97,6 +103,27 @@ const VisualEditorContainer: FC = (props) => {
         if (!currentElement || !material) return;
 
         currentElement.mesh.material = material[0];
+
+        setBabylonObjectsData(prevState => {
+            if (!prevState) return prevState;
+
+            if (prevState.playground.mesh.uniqueId === currentElement.mesh.uniqueId) {
+                return {
+                    ...prevState,
+                    playground: { ...currentElement },
+                };
+            } else {
+                return {
+                    ...prevState,
+                    buildings: prevState.buildings.map(building =>
+                        building.mesh.uniqueId === currentElement.mesh.uniqueId
+                            ? { ...currentElement }
+                            : building
+                    ),
+                };
+            }
+        });
+
         setCurrentElement(undefined);
     }
 
@@ -146,6 +173,7 @@ const VisualEditorContainer: FC = (props) => {
         <VisualEditorView
             isDrawMode={isDrawMode}
             isEditMode={isEditMode}
+            babylonObjectsData={babylonObjectsData}
             currentElement={currentElement}
             draw={draw}
             scene={scene}
@@ -158,6 +186,7 @@ const VisualEditorContainer: FC = (props) => {
             handleMaterial={handleMaterial}
             handleCurrentElement={handleCurrentElement}
             clearCurrentElement={clearCurrentElement}
+            handleBabylonObjectsDataChange={handleBabylonObjectsDataChange}
             handleEditCurrentElement={handleEditCurrentElement}
             handleDraw={handleDraw}
             handleEditMode={handleEditMode}

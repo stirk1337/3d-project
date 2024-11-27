@@ -4,17 +4,19 @@ import { TVisualEditorView } from "./VisualEditor.types";
 import styles from "./VisualEditor.module.scss"
 
 const VisualEditorView: FC<TVisualEditorView> = (props) => {
-    const { isEditMode, isDrawMode, currentElement, draw, map, scene, floorsCount, floorsHeight, currentSquare } = props;
+    const { isEditMode, isDrawMode, currentElement, draw, map, scene, floorsCount, floorsHeight, currentSquare, babylonObjectsData } = props;
 
     return (
         <div className={styles.editor}>
             <Editor
                 isEditMode={isEditMode}
                 isDrawMode={isDrawMode}
+                babylonObjectsData={babylonObjectsData}
                 currentElement={currentElement}
                 scene={scene}
                 draw={draw}
                 map={map}
+                handleBabylonObjectsDataChange={props.handleBabylonObjectsDataChange}
                 handleScene={props.handleScene}
                 handleMap={props.handleMap}
                 handleMaterial={props.handleMaterial}

@@ -87,3 +87,45 @@ export function createExtrudedPolygon(corners: BABYLON.Vector2[], height: number
 
     return extrudedPolygon;
 }
+
+export function filterMapBuildings(currentDraw: MapboxDraw, map: mapboxgl.Map) {
+    const data = currentDraw.getAll();
+    const geometry = data.features[0].geometry as GeoJSON.Polygon;
+    const coordinates = geometry.coordinates[0];
+
+    const sourceId = 'eraser';
+
+    const features = {
+        type: 'FeatureCollection',
+        features: [
+            {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                    coordinates: [coordinates],
+                    type: 'Polygon'
+                }
+            }
+        ]
+    } as GeoJSON.GeoJSON;
+
+
+    if (map.getSource(sourceId)) {
+        (map.getSource(sourceId) as mapboxgl.GeoJSONSource).setData(features);
+    } else {
+        map.addSource(sourceId, {
+            type: 'geojson',
+            data: features,
+        });
+
+        map.addLayer({
+            id: sourceId,
+            type: 'clip',
+            source: sourceId,
+            layout: {
+                'clip-layer-types': ['symbol', 'model']
+            },
+            maxzoom: 0
+        });
+    }
+}

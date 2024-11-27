@@ -1,11 +1,13 @@
 import * as BABYLON from "@babylonjs/core";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import { ChangeEvent } from "react";
+import { TBabylonObjectData } from "../Editor/Editor.types";
 
 export type TVisualEditorView = {
     isEditMode: boolean;
     isDrawMode: boolean;
-    currentElement: BABYLON.Mesh | undefined;
+    babylonObjectsData: TBabylonObjectData | undefined
+    currentElement: TBabylonObject | undefined;
     draw: MapboxDraw | undefined;
     scene: BABYLON.Scene | undefined;
     map: mapboxgl.Map | undefined;
@@ -18,6 +20,7 @@ export type TVisualEditorView = {
     handleMaterial: (material: BABYLON.Material[]) => void;
     handleEditMode: () => void;
     handleDrawMode: () => void;
+    handleBabylonObjectsDataChange: (babylonObjectsData: TBabylonObjectData) => void
     handleCurrentElement: (polygonData: TBabylonObject) => void;
     clearCurrentElement: () => void;
     handleEditCurrentElement: () => void;
