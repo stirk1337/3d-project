@@ -3,6 +3,7 @@ import * as BABYLON from "@babylonjs/core";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import "./map.scss";
 import mapboxgl, { MercatorCoordinate } from 'mapbox-gl';
+import { worldOriginMercator, worldRotate, worldScale } from '../Editor.container';
 
 type TMapProps = {
     worldOriginMercator: MercatorCoordinate;
@@ -18,17 +19,6 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
 
     const [engine, setEngine] = useState<BABYLON.Engine>();
 
-    const worldOrigin = [148.9819, -35.39847];
-    const worldAltitude = 0;
-    const worldRotate = [Math.PI / 2, 0, 0];
-
-    // Calculate mercator coordinates and scale
-    const worldOriginMercator = mapboxgl.MercatorCoordinate.fromLngLat(
-        worldOrigin,
-        worldAltitude
-    );
-    const worldScale = worldOriginMercator.meterInMercatorCoordinateUnits();
-
     useEffect(() => {
         if (!mapContainer.current) return;
 
@@ -38,7 +28,7 @@ const MapWith3DModel: React.FC<TMapProps> = (props) => {
             container: mapContainer.current,
             style: 'mapbox://styles/mapbox/streets-v12',
             zoom: 18,
-            center: [148.9819, -35.3981],
+            center: [60.6122, 56.8519],
             pitch: 60,
             antialias: true, // enable MSAA antialiasing
         });

@@ -8,7 +8,7 @@ import mapboxgl from "mapbox-gl";
 import earcut from "earcut";
 import { TBabylonObject, TBabylonObjectPlayground } from "../VisualEditor/VisualEditor.types";
 
-export const worldOrigin = [148.9819, -35.39847];
+export const worldOrigin = [60.6122, 56.8519];
 export const worldAltitude = 0;
 export const worldRotate = [Math.PI / 2, 0, 0];
 
