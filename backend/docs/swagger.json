@@ -5,6 +5,188 @@
         "contact": {}
     },
     "paths": {
+        "/project/create-building": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "project"
+                ],
+                "summary": "Создание здания",
+                "parameters": [
+                    {
+                        "description": "Building information",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/projects.createBuildingInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Building Details",
+                        "schema": {
+                            "$ref": "#/definitions/projects.createBuildingResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/project/create-playground": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "project"
+                ],
+                "summary": "Создание плошадки",
+                "parameters": [
+                    {
+                        "description": "Playground information",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/projects.createBuildingInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/projects.createBuildingResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/project/create-project": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "project"
+                ],
+                "summary": "Создание проекта",
+                "parameters": [
+                    {
+                        "description": "Project information",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/projects.createProjectInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Project Details",
+                        "schema": {
+                            "$ref": "#/definitions/projects.createProjectResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/project/project-details": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "project"
+                ],
+                "summary": "Получение информации о проекте",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Project Details",
+                        "schema": {
+                            "$ref": "#/definitions/projects.projectDetailsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/project/update-building": {
+            "patch": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "project"
+                ],
+                "summary": "Обновление здания",
+                "parameters": [
+                    {
+                        "description": "Building information",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/projects.updateBuildingInput"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/project/update-playground": {
+            "patch": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "project"
+                ],
+                "summary": "Обновление площадки",
+                "parameters": [
+                    {
+                        "description": "Playground information",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/projects.updatePlaygroundInput"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/protected/user": {
             "get": {
                 "security": [
@@ -92,6 +274,153 @@
                 "token": {
                     "type": "string",
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzEzMjE0ODcsImp0aSI6IjEifQ.9MZ0XILeQU-zyIdWP_rcUZ20lneAg0Zo_Q_oKfhLUrA"
+                }
+            }
+        },
+        "projects.Building": {
+            "type": "object",
+            "properties": {
+                "coordinates": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/projects.Coordinate"
+                    }
+                },
+                "floors": {
+                    "type": "integer"
+                },
+                "floors_height": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "project_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "projects.Coordinate": {
+            "type": "object",
+            "properties": {
+                "x": {
+                    "type": "integer"
+                },
+                "y": {
+                    "type": "integer"
+                }
+            }
+        },
+        "projects.Playground": {
+            "type": "object",
+            "properties": {
+                "coordinates": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/projects.Coordinate"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "project_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "projects.createBuildingInput": {
+            "type": "object",
+            "properties": {
+                "coordinates": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/projects.Coordinate"
+                    }
+                },
+                "project_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "projects.createBuildingResponse": {
+            "type": "object",
+            "properties": {
+                "building_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "projects.createProjectInput": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "projects.createProjectResponse": {
+            "type": "object",
+            "properties": {
+                "project_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "projects.projectDetailsResponse": {
+            "type": "object",
+            "properties": {
+                "buildings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/projects.Building"
+                    }
+                },
+                "playground": {
+                    "$ref": "#/definitions/projects.Playground"
+                }
+            }
+        },
+        "projects.updateBuildingInput": {
+            "type": "object",
+            "required": [
+                "building_id",
+                "coordinates",
+                "floors",
+                "floors_height"
+            ],
+            "properties": {
+                "building_id": {
+                    "type": "integer"
+                },
+                "coordinates": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/projects.Coordinate"
+                    }
+                },
+                "floors": {
+                    "type": "integer"
+                },
+                "floors_height": {
+                    "type": "number"
+                }
+            }
+        },
+        "projects.updatePlaygroundInput": {
+            "type": "object",
+            "required": [
+                "coordinates",
+                "playground_id"
+            ],
+            "properties": {
+                "coordinates": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/projects.Coordinate"
+                    }
+                },
+                "playground_id": {
+                    "type": "integer"
                 }
             }
         }

@@ -12,10 +12,223 @@ definitions:
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzEzMjE0ODcsImp0aSI6IjEifQ.9MZ0XILeQU-zyIdWP_rcUZ20lneAg0Zo_Q_oKfhLUrA
         type: string
     type: object
+  projects.Building:
+    properties:
+      coordinates:
+        items:
+          $ref: '#/definitions/projects.Coordinate'
+        type: array
+      floors:
+        type: integer
+      floors_height:
+        type: number
+      id:
+        type: integer
+      project_id:
+        type: integer
+    type: object
+  projects.Coordinate:
+    properties:
+      x:
+        type: integer
+      "y":
+        type: integer
+    type: object
+  projects.Playground:
+    properties:
+      coordinates:
+        items:
+          $ref: '#/definitions/projects.Coordinate'
+        type: array
+      id:
+        type: integer
+      project_id:
+        type: integer
+    type: object
+  projects.createBuildingInput:
+    properties:
+      coordinates:
+        items:
+          $ref: '#/definitions/projects.Coordinate'
+        type: array
+      project_id:
+        type: integer
+    type: object
+  projects.createBuildingResponse:
+    properties:
+      building_id:
+        type: integer
+    type: object
+  projects.createProjectInput:
+    properties:
+      name:
+        type: string
+    type: object
+  projects.createProjectResponse:
+    properties:
+      project_id:
+        type: integer
+    type: object
+  projects.projectDetailsResponse:
+    properties:
+      buildings:
+        items:
+          $ref: '#/definitions/projects.Building'
+        type: array
+      playground:
+        $ref: '#/definitions/projects.Playground'
+    type: object
+  projects.updateBuildingInput:
+    properties:
+      building_id:
+        type: integer
+      coordinates:
+        items:
+          $ref: '#/definitions/projects.Coordinate'
+        type: array
+      floors:
+        type: integer
+      floors_height:
+        type: number
+    required:
+    - building_id
+    - coordinates
+    - floors
+    - floors_height
+    type: object
+  projects.updatePlaygroundInput:
+    properties:
+      coordinates:
+        items:
+          $ref: '#/definitions/projects.Coordinate'
+        type: array
+      playground_id:
+        type: integer
+    required:
+    - coordinates
+    - playground_id
+    type: object
 info:
   contact: {}
   title: 3d-backend API
 paths:
+  /project/create-building:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Building information
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/projects.createBuildingInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Building Details
+          schema:
+            $ref: '#/definitions/projects.createBuildingResponse'
+      summary: Создание здания
+      tags:
+      - project
+  /project/create-playground:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Playground information
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/projects.createBuildingInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/projects.createBuildingResponse'
+      summary: Создание плошадки
+      tags:
+      - project
+  /project/create-project:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Project information
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/projects.createProjectInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Project Details
+          schema:
+            $ref: '#/definitions/projects.createProjectResponse'
+      summary: Создание проекта
+      tags:
+      - project
+  /project/project-details:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Project ID
+        in: query
+        name: project_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Project Details
+          schema:
+            $ref: '#/definitions/projects.projectDetailsResponse'
+      summary: Получение информации о проекте
+      tags:
+      - project
+  /project/update-building:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Building information
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/projects.updateBuildingInput'
+      produces:
+      - application/json
+      responses: {}
+      summary: Обновление здания
+      tags:
+      - project
+  /project/update-playground:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Playground information
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/projects.updatePlaygroundInput'
+      produces:
+      - application/json
+      responses: {}
+      summary: Обновление площадки
+      tags:
+      - project
   /protected/user:
     get:
       consumes:
