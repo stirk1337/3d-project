@@ -65,8 +65,8 @@ func main() {
 		project.POST("/create-project", projects.CreateProject)
 		project.POST("/create-building", projects.CreateBuilding)
 		project.POST("/create-playground", projects.CreatePlayground)
-		project.PATCH("/update-building", projects.PatchBuilding)
-		project.PATCH("/update-playground", projects.PatchPlayground)
+		project.POST("/update-building", projects.PatchBuilding)
+		project.POST("/update-playground", projects.PatchPlayground)
 	}
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
