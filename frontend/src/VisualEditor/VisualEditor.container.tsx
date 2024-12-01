@@ -22,6 +22,8 @@ const VisualEditorContainer: FC = (props) => {
     const [floorsHeight, setFloorsHeight] = useState(0);
     const [currentSquare, setCurrentSquare] = useState(0);
 
+    console.log(babylonObjectsData);
+
     const handleScene = (scene: BABYLON.Scene) => {
         setScene(scene)
     }
