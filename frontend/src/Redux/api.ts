@@ -11,7 +11,7 @@ export type Token = {
     token_type: string
 }
 
-export const BACKEND_URL = 'http://http://localhost:8080';
+export const BACKEND_URL = 'http://localhost:8080';
 export const REQUEST_TIMEOUT = 5000;
 
 export const createAPI = (): AxiosInstance => {

@@ -6,10 +6,15 @@ import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import { worldAltitude, worldOriginMercator, worldScale } from "../Editor/Editor.container";
 import mapboxgl from "mapbox-gl";
 import earcut from "earcut";
-import { calculateBasePolygonArea } from "./VisualEditor.service";
+import { calculateBasePolygonArea, getBabylonMeshFromCoordinates } from "./VisualEditor.service";
 import { TBabylonObjectData } from "../Editor/Editor.types";
+import { useAppDispatch, useAppSelector } from "../Redux/hooks";
+import { getProjectData } from "../Redux/store/api-actions/get-actions";
 
 const VisualEditorContainer: FC = (props) => {
+    const dispatch = useAppDispatch()
+    const projectData = useAppSelector(store => store.currentProject)
+
     const [scene, setScene] = useState<BABYLON.Scene>();
     const [map, setMap] = useState<mapboxgl.Map>()
     const [material, setMaterial] = useState<BABYLON.Material[]>();
@@ -21,6 +26,29 @@ const VisualEditorContainer: FC = (props) => {
     const [floorsCount, setFloorsCount] = useState(0);
     const [floorsHeight, setFloorsHeight] = useState(0);
     const [currentSquare, setCurrentSquare] = useState(0);
+
+    useEffect(() => {
+        dispatch(getProjectData(1))
+    }, [])
+
+    useEffect(() => {
+        if (!map || !scene || !projectData) return;
+
+        const playground = projectData.playground;
+
+        if (!playground) return;
+
+        const [playgroundPolygon, polygonCoordinates] = getBabylonMeshFromCoordinates(playground, scene, handleCurrentElement, true);
+
+        const buildings = projectData.buildings;
+        const buildingsPolygons: TBabylonObject[] = []
+        buildings.forEach((building) => {
+            const [buildingPolygon, buildingCoordinates] = getBabylonMeshFromCoordinates(building, scene, handleCurrentElement);
+            buildingsPolygons.push({ ...building, mesh: buildingPolygon, coordinates: buildingCoordinates });
+        })
+
+        handleBabylonObjectsDataChange({ playground: { mesh: playgroundPolygon, coordinates: polygonCoordinates }, buildings: buildingsPolygons });
+    }, [map, scene, projectData]);
 
     console.log(babylonObjectsData);
 
@@ -53,13 +81,15 @@ const VisualEditorContainer: FC = (props) => {
 
         setIsDrawMode(false);
         setCurrentElement(polygonData)
-        setFloorsCount(polygonData.floors)
-        setFloorsHeight(polygonData.floorsHeight)
+        if (polygonData.floors && polygonData.floorsHeight) {
+            setFloorsCount(polygonData.floors)
+            setFloorsHeight(polygonData.floorsHeight)
+        }
         setCurrentSquare(calculateBasePolygonArea(polygonData.coordinates))
     }
 
     const handleFloorsCount = (event: ChangeEvent<HTMLInputElement>) => {
-        if (!currentElement) return;
+        if (!currentElement || !currentElement.floorsHeight) return;
 
         const floors = Number(event.target.value)
 
@@ -69,7 +99,7 @@ const VisualEditorContainer: FC = (props) => {
     }
 
     const handleFloorsHeight = (event: ChangeEvent<HTMLInputElement>) => {
-        if (!currentElement) return;
+        if (!currentElement || !currentElement.floors) return;
 
         const floorsHeight = Number(event.target.value)
 

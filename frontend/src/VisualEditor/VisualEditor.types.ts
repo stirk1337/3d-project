@@ -32,8 +32,8 @@ export type TVisualEditorView = {
 export type TBabylonObject = {
     mesh: BABYLON.Mesh;
     coordinates: BABYLON.Vector2[];
-    floors: number;
-    floorsHeight: number;
+    floors?: number;
+    floorsHeight?: number;
 }
 
 export type TBabylonObjectPlayground = Omit<TBabylonObject, 'floors' | 'floorsHeight'>;

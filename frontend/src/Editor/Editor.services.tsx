@@ -1,35 +1,10 @@
 import earcut from "earcut";
-import { TPoint } from "./Editor.types";
 import * as BABYLON from "@babylonjs/core";
 import { Vector2 } from "@babylonjs/core";
 import mapboxgl from "mapbox-gl";
 import { worldAltitude, worldOriginMercator, worldScale } from "./Editor.container";
 import * as turf from '@turf/turf';
 import { TBabylonObjectPlayground } from "../VisualEditor/VisualEditor.types";
-
-export function getBabylonMeshFromCoordinates(id: number, coordinates: TPoint[], scene: BABYLON.Scene, depth: number): [BABYLON.Mesh, BABYLON.Vector2[]] {
-    let polygonCorners: BABYLON.Vector2[] = []
-
-    coordinates.forEach((point) => {
-        const { x, y } = point;
-
-        polygonCorners.push(new BABYLON.Vector2(x, y))
-    })
-
-    const polygon = new BABYLON.PolygonMeshBuilder(String(id), polygonCorners, scene, earcut);
-    const extrudedPolygon = polygon.build(true, depth);
-
-    extrudedPolygon.metadata = { id: id };
-
-    extrudedPolygon.position.y = depth;
-
-    extrudedPolygon.actionManager = new BABYLON.ActionManager(scene);
-    extrudedPolygon.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
-        //props.setBox(extrudedPolygon);
-    }));
-
-    return [extrudedPolygon, polygonCorners];
-}
 
 export function getPolygonCorners(currentDraw: MapboxDraw, playground?: TBabylonObjectPlayground | undefined): BABYLON.Vector2[] | undefined {
     const data = currentDraw.getAll();
