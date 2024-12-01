@@ -55,7 +55,7 @@ func main() {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	log.Println("Listen on 0.0.0.0:8080")
-	if err := r.Run("0.0.0.0:8082"); err != nil {
+	if err := r.Run("0.0.0.0:8080"); err != nil {
 		log.Panic(err)
 	}
 
