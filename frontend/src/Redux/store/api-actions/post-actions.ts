@@ -1,11 +1,11 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { TBabylonObject } from "../../../VisualEditor/VisualEditor.types";
 import { AppDispatch, State } from "..";
 import { AxiosInstance } from "axios";
+import { Vector2 } from "@babylonjs/core";
 
 export const create3DObject = createAsyncThunk<
-    void,
-    { isPlayground: boolean; object3D: TBabylonObject },
+    number,
+    { isPlayground: boolean; object3D: Vector2[] },
     {
         dispatch: AppDispatch;
         state: State;
@@ -16,11 +16,13 @@ export const create3DObject = createAsyncThunk<
     async (data, { extra: api }) => {
         const { object3D, isPlayground } = data;
 
-        const transformedCoordinates = object3D.coordinates.map(({ x, y }) => ({ x: Math.round(x), y: Math.round(y) }));
+        const transformedCoordinates = object3D.map(({ x, y }) => ({ x: Math.round(x), y: Math.round(y) }));
 
-        await api.post(`/project/create-${isPlayground ? "playground" : "building"}`, {
+        const { data: id } = await api.post(`/project/create-${isPlayground ? "playground" : "building"}`, {
             coordinates: transformedCoordinates,
             project_id: 1
         });
+
+        return id.building_id;
     },
 );

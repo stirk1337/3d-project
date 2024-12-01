@@ -10,6 +10,7 @@ import { calculateBasePolygonArea, getBabylonMeshFromCoordinates } from "./Visua
 import { TBabylonObjectData } from "../Editor/Editor.types";
 import { useAppDispatch, useAppSelector } from "../Redux/hooks";
 import { getProjectData } from "../Redux/store/api-actions/get-actions";
+import { edit3DObject } from "../Redux/store/api-actions/patch-actions";
 
 const VisualEditorContainer: FC = (props) => {
     const dispatch = useAppDispatch()
@@ -53,7 +54,7 @@ const VisualEditorContainer: FC = (props) => {
             })
         }
 
-        handleBabylonObjectsDataChange({ playground: { mesh: playgroundPolygon, coordinates: polygonCoordinates }, buildings: buildingsPolygons });
+        handleBabylonObjectsDataChange({ playground: { id: playground.id, mesh: playgroundPolygon, coordinates: polygonCoordinates }, buildings: buildingsPolygons });
     }, [map, scene, projectData]);
 
     console.log(babylonObjectsData);
@@ -85,6 +86,8 @@ const VisualEditorContainer: FC = (props) => {
     const handleCurrentElement = (polygonData: TBabylonObject) => {
         if (currentElement && material) currentElement.mesh.material = material[0];
 
+        dispatch(edit3DObject({ isPlayground: !(polygonData.floors && polygonData.floorsHeight), object3D: polygonData }))
+
         setIsDrawMode(false);
         setCurrentElement(polygonData)
         if (polygonData.floors && polygonData.floorsHeight) {
@@ -108,6 +111,7 @@ const VisualEditorContainer: FC = (props) => {
         if (!currentElement || !currentElement.floors) return;
 
         const floorsHeight = Number(event.target.value)
+        console.log(floorsHeight)
 
         setFloorsHeight(floorsHeight)
 
@@ -133,6 +137,8 @@ const VisualEditorContainer: FC = (props) => {
         extrudedPolygon.uniqueId = currentElement.mesh.uniqueId;
 
         currentElement.mesh.dispose();
+
+        dispatch(edit3DObject({ isPlayground: false, object3D: { ...currentElement, floors, floorsHeight: height } }))
 
         setCurrentElement({ ...currentElement, mesh: extrudedPolygon, floors, floorsHeight: height })
     }

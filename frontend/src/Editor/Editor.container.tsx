@@ -9,6 +9,7 @@ import earcut from "earcut";
 import { TBabylonObject, TBabylonObjectPlayground } from "../VisualEditor/VisualEditor.types";
 import { useAppDispatch } from "../Redux/hooks";
 import { create3DObject } from "../Redux/store/api-actions/post-actions";
+import { edit3DObject } from "../Redux/store/api-actions/patch-actions";
 
 export const worldOrigin = [60.6122, 56.8519];
 export const worldAltitude = 0;
@@ -109,10 +110,10 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
         props.handleMaterial([defaultMaterial, currentMaterial]);
     }
 
-    function handleSetBuilding(box: BABYLON.Mesh, coordinates: BABYLON.Vector2[]) {
+    function handleSetBuilding(polygonData: TBabylonObject) {
         if (!babylonObjectsData) {
             const defaultObjectData: TBabylonObjectData = {
-                playground: { mesh: box, coordinates },
+                playground: polygonData,
                 buildings: []
             }
 
@@ -123,11 +124,11 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
 
         props.handleBabylonObjectsDataChange({
             ...babylonObjectsData,
-            buildings: [...babylonObjectsData.buildings, { mesh: box, coordinates, floors: 1, floorsHeight: 10 }]
+            buildings: [...babylonObjectsData.buildings, polygonData]
         });
     }
 
-    function handleUpdateArea(currentDraw: MapboxDraw, isDrawingZone: boolean, playground?: TBabylonObjectPlayground) {
+    async function handleUpdateArea(currentDraw: MapboxDraw, isDrawingZone: boolean, playground?: TBabylonObjectPlayground) {
         if (!currentDraw || !map) return;
 
         const polygonCorners = getPolygonCorners(currentDraw, playground);
@@ -136,7 +137,7 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
 
         const polygon = new BABYLON.PolygonMeshBuilder("polytri", polygonCorners, scene, earcut);
 
-        const polygonHeight = isDrawingZone ? 0.1 : 10
+        const polygonHeight = isDrawingZone ? 0.1 : 3
 
         const extrudedPolygon = polygon.build(true, polygonHeight);
         extrudedPolygon.position.y = polygonHeight;
@@ -145,12 +146,15 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
 
         extrudedPolygon.actionManager = new BABYLON.ActionManager(scene);
 
+        const id = await dispatch(create3DObject({ isPlayground: isDrawingZone, object3D: polygonCorners })).unwrap();
+
         const polygonData: TBabylonObject = {
+            id,
             mesh: extrudedPolygon,
             coordinates: polygonCorners,
             floors: 1,
             floorsHeight: polygonHeight
-        }
+        };
 
         extrudedPolygon.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, () => props.handleCurrentElement(polygonData)));
 
@@ -161,9 +165,7 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
 
         if (!isDrawingZone) props.handleCurrentElement(polygonData)
 
-        dispatch(create3DObject({ isPlayground: isDrawingZone, object3D: polygonData }));
-
-        handleSetBuilding(extrudedPolygon, polygonCorners);
+        handleSetBuilding(polygonData);
     }
 
     function handleClickMesh(polygonData: TBabylonObject) {
@@ -189,7 +191,7 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
         let updatedBuildings = babylonObjectsData.buildings;
         if (isPlayground) {
             updatedBuildings = updatePlaygroundBuildings(updatedBuildings, polygonCorners);
-            setPlayground({ coordinates: polygonCorners, mesh: extrudedPolygon });
+            setPlayground({ ...currentElement, coordinates: polygonCorners, mesh: extrudedPolygon });
             filterMapBuildings(currentDraw, map)
         }
 
@@ -237,6 +239,8 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
             setPolygonClickAction(updatedPolygon, buildingCorners, buildingData);
 
             buildingData.mesh.dispose();
+
+            dispatch(edit3DObject({ isPlayground: false, object3D: { ...buildingData, coordinates: buildingCorners } }))
 
             return {
                 ...buildingData,

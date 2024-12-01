@@ -23,7 +23,7 @@ export function calculateBasePolygonArea(coordinates: { x: number, y: number }[]
 export function getBabylonMeshFromCoordinates(
     projectObject: TProjectObject,
     scene: BABYLON.Scene,
-    handleCurrentElement: (polygonData: TBabylonObject) => void,
+    handleCurrentElement: (polygonData: TBabylonObject, isPlayground: boolean) => void,
     isPlayground: boolean = false
 ): [BABYLON.Mesh, BABYLON.Vector2[]] {
     let polygonCorners: BABYLON.Vector2[] = []
@@ -44,13 +44,14 @@ export function getBabylonMeshFromCoordinates(
 
     extrudedPolygon.actionManager = new BABYLON.ActionManager(scene);
 
-    const polygonData: TBabylonObject | TBabylonObjectPlayground = {
+    const polygonData: TBabylonObject = {
+        id: projectObject.id,
         mesh: extrudedPolygon,
         coordinates: polygonCorners,
         ...(isPlayground ? {} : { floors: projectObject.floors, floorsHeight: projectObject.floorsHeight }),
     };
 
-    extrudedPolygon.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, () => handleCurrentElement(polygonData)));
+    extrudedPolygon.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, () => handleCurrentElement(polygonData, isPlayground)));
 
     return [extrudedPolygon, polygonCorners];
 }
