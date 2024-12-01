@@ -7,6 +7,8 @@ import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import mapboxgl from "mapbox-gl";
 import earcut from "earcut";
 import { TBabylonObject, TBabylonObjectPlayground } from "../VisualEditor/VisualEditor.types";
+import { useAppDispatch } from "../Redux/hooks";
+import { create3DObject } from "../Redux/store/api-actions/post-actions";
 
 export const worldOrigin = [60.6122, 56.8519];
 export const worldAltitude = 0;
@@ -21,6 +23,8 @@ export const worldScale = worldOriginMercator.meterInMercatorCoordinateUnits();
 
 const EditorContainer: FC<TEditorContainer> = (props) => {
     const { isEditMode, isDrawMode, currentElement, draw, map, scene, babylonObjectsData } = props;
+
+    const dispatch = useAppDispatch();
 
     const [playground, setPlayground] = useState<TBabylonObjectPlayground>()
     const [isDrawingZone, setDrawingZone] = useState(true);
@@ -156,6 +160,8 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
         props.handleDraw()
 
         if (!isDrawingZone) props.handleCurrentElement(polygonData)
+
+        dispatch(create3DObject({ isPlayground: isDrawingZone, object3D: polygonData }));
 
         handleSetBuilding(extrudedPolygon, polygonCorners);
     }

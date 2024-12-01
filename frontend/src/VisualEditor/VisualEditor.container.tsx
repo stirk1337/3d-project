@@ -32,6 +32,10 @@ const VisualEditorContainer: FC = (props) => {
     }, [])
 
     useEffect(() => {
+        console.log("alo", babylonObjectsData)
+    }, [babylonObjectsData])
+
+    useEffect(() => {
         if (!map || !scene || !projectData) return;
 
         const playground = projectData.playground;
@@ -42,10 +46,12 @@ const VisualEditorContainer: FC = (props) => {
 
         const buildings = projectData.buildings;
         const buildingsPolygons: TBabylonObject[] = []
-        buildings.forEach((building) => {
-            const [buildingPolygon, buildingCoordinates] = getBabylonMeshFromCoordinates(building, scene, handleCurrentElement);
-            buildingsPolygons.push({ ...building, mesh: buildingPolygon, coordinates: buildingCoordinates });
-        })
+        if (buildings) {
+            buildings.forEach((building) => {
+                const [buildingPolygon, buildingCoordinates] = getBabylonMeshFromCoordinates(building, scene, handleCurrentElement);
+                buildingsPolygons.push({ ...building, mesh: buildingPolygon, coordinates: buildingCoordinates });
+            })
+        }
 
         handleBabylonObjectsDataChange({ playground: { mesh: playgroundPolygon, coordinates: polygonCoordinates }, buildings: buildingsPolygons });
     }, [map, scene, projectData]);
