@@ -3,10 +3,8 @@ import { VisualEditorView } from "./VisualEditor.view";
 import * as BABYLON from "@babylonjs/core";
 import { TBabylonObject } from "./VisualEditor.types";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
-import { worldAltitude, worldOriginMercator, worldScale } from "../Editor/Editor.container";
-import mapboxgl from "mapbox-gl";
 import earcut from "earcut";
-import { calculateBasePolygonArea, getBabylonMeshFromCoordinates } from "./VisualEditor.service";
+import { calculateBasePolygonArea, convertBabylonCoordinatesToMapBox, getBabylonMeshFromCoordinates, handleEraser } from "./VisualEditor.service";
 import { TBabylonObjectData } from "../Editor/Editor.types";
 import { useAppDispatch, useAppSelector } from "../Redux/hooks";
 import { getProjectData } from "../Redux/store/api-actions/get-actions";
@@ -42,6 +40,12 @@ const VisualEditorContainer: FC = (props) => {
         const playground = projectData.playground;
 
         if (!playground) return;
+
+        const polygonCorners = playground.coordinates
+
+        const coordinates = convertBabylonCoordinatesToMapBox(polygonCorners)
+
+        handleEraser(map, coordinates)
 
         const [playgroundPolygon, polygonCoordinates] = getBabylonMeshFromCoordinates(playground, scene, handleCurrentElement, true);
 
@@ -181,13 +185,7 @@ const VisualEditorContainer: FC = (props) => {
 
         const polygonCorners = currentElement.coordinates
 
-        const coordinates = polygonCorners.map(corner => {
-            const mercatorX = -(corner.x - 0.5) * worldScale + worldOriginMercator.x;
-            const mercatorY = (corner.y - 49) * worldScale + worldOriginMercator.y;
-            const mercatorCoordinate = new mapboxgl.MercatorCoordinate(mercatorX, mercatorY, worldAltitude);
-            const lngLat = mercatorCoordinate.toLngLat();
-            return [lngLat.lng, lngLat.lat];
-        });
+        const coordinates = convertBabylonCoordinatesToMapBox(polygonCorners)
 
         const polygonFeature = {
             type: "Feature",
