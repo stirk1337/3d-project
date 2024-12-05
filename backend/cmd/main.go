@@ -12,6 +12,22 @@ import (
 	"log"
 )
 
+func CORSMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+        c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+        c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+        c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, PATCH")
+
+        if c.Request.Method == "OPTIONS" {
+            c.AbortWithStatus(204)
+            return
+        }
+
+        c.Next()
+    }
+}
+
 // @title           3d-backend API
 // @securityDefinitions.apikey BearerAuth
 // @in header
@@ -32,6 +48,7 @@ func main() {
 	defer db.Close()
 
 	r := gin.Default()
+	r.Use(CORSMiddleware())
 	r.Use(internal.DBMiddleware(db))
 
 	r.POST("/sign-in", auth.SignIn)
@@ -48,8 +65,8 @@ func main() {
 		project.POST("/create-project", projects.CreateProject)
 		project.POST("/create-building", projects.CreateBuilding)
 		project.POST("/create-playground", projects.CreatePlayground)
-		project.PATCH("/update-building", projects.PatchBuilding)
-		project.PATCH("/update-playground", projects.PatchPlayground)
+		project.POST("/update-building", projects.PatchBuilding)
+		project.POST("/update-playground", projects.PatchPlayground)
 	}
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

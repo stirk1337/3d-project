@@ -3,13 +3,17 @@ import { VisualEditorView } from "./VisualEditor.view";
 import * as BABYLON from "@babylonjs/core";
 import { TBabylonObject } from "./VisualEditor.types";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
-import { worldAltitude, worldOriginMercator, worldScale } from "../Editor/Editor.container";
-import mapboxgl from "mapbox-gl";
 import earcut from "earcut";
-import { calculateBasePolygonArea } from "./VisualEditor.service";
+import { calculateBasePolygonArea, convertBabylonCoordinatesToMapBox, getBabylonMeshFromCoordinates, handleEraser } from "./VisualEditor.service";
 import { TBabylonObjectData } from "../Editor/Editor.types";
+import { useAppDispatch, useAppSelector } from "../Redux/hooks";
+import { getProjectData } from "../Redux/store/api-actions/get-actions";
+import { edit3DObject } from "../Redux/store/api-actions/patch-actions";
 
 const VisualEditorContainer: FC = (props) => {
+    const dispatch = useAppDispatch()
+    const projectData = useAppSelector(store => store.currentProject)
+
     const [scene, setScene] = useState<BABYLON.Scene>();
     const [map, setMap] = useState<mapboxgl.Map>()
     const [material, setMaterial] = useState<BABYLON.Material[]>();
@@ -21,6 +25,43 @@ const VisualEditorContainer: FC = (props) => {
     const [floorsCount, setFloorsCount] = useState(0);
     const [floorsHeight, setFloorsHeight] = useState(0);
     const [currentSquare, setCurrentSquare] = useState(0);
+
+    useEffect(() => {
+        dispatch(getProjectData(1))
+    }, [])
+
+    useEffect(() => {
+        console.log("alo", babylonObjectsData)
+    }, [babylonObjectsData])
+
+    useEffect(() => {
+        if (!map || !scene || !projectData) return;
+
+        const playground = projectData.playground;
+
+        if (!playground) return;
+
+        const polygonCorners = playground.coordinates
+
+        const coordinates = convertBabylonCoordinatesToMapBox(polygonCorners)
+
+        handleEraser(map, coordinates)
+
+        const [playgroundPolygon, polygonCoordinates] = getBabylonMeshFromCoordinates(playground, scene, handleCurrentElement, true);
+
+        const buildings = projectData.buildings;
+        const buildingsPolygons: TBabylonObject[] = []
+        if (buildings) {
+            buildings.forEach((building) => {
+                const [buildingPolygon, buildingCoordinates] = getBabylonMeshFromCoordinates(building, scene, handleCurrentElement);
+                buildingsPolygons.push({ ...building, mesh: buildingPolygon, coordinates: buildingCoordinates });
+            })
+        }
+
+        handleBabylonObjectsDataChange({ playground: { id: playground.id, mesh: playgroundPolygon, coordinates: polygonCoordinates }, buildings: buildingsPolygons });
+    }, [map, scene, projectData]);
+
+    console.log(babylonObjectsData);
 
     const handleScene = (scene: BABYLON.Scene) => {
         setScene(scene)
@@ -49,15 +90,19 @@ const VisualEditorContainer: FC = (props) => {
     const handleCurrentElement = (polygonData: TBabylonObject) => {
         if (currentElement && material) currentElement.mesh.material = material[0];
 
+        dispatch(edit3DObject({ isPlayground: !(polygonData.floors && polygonData.floorsHeight), object3D: polygonData }))
+
         setIsDrawMode(false);
         setCurrentElement(polygonData)
-        setFloorsCount(polygonData.floors)
-        setFloorsHeight(polygonData.floorsHeight)
+        if (polygonData.floors && polygonData.floorsHeight) {
+            setFloorsCount(polygonData.floors)
+            setFloorsHeight(polygonData.floorsHeight)
+        }
         setCurrentSquare(calculateBasePolygonArea(polygonData.coordinates))
     }
 
     const handleFloorsCount = (event: ChangeEvent<HTMLInputElement>) => {
-        if (!currentElement) return;
+        if (!currentElement || !currentElement.floorsHeight) return;
 
         const floors = Number(event.target.value)
 
@@ -67,9 +112,10 @@ const VisualEditorContainer: FC = (props) => {
     }
 
     const handleFloorsHeight = (event: ChangeEvent<HTMLInputElement>) => {
-        if (!currentElement) return;
+        if (!currentElement || !currentElement.floors) return;
 
         const floorsHeight = Number(event.target.value)
+        console.log(floorsHeight)
 
         setFloorsHeight(floorsHeight)
 
@@ -95,6 +141,8 @@ const VisualEditorContainer: FC = (props) => {
         extrudedPolygon.uniqueId = currentElement.mesh.uniqueId;
 
         currentElement.mesh.dispose();
+
+        dispatch(edit3DObject({ isPlayground: false, object3D: { ...currentElement, floors, floorsHeight: height } }))
 
         setCurrentElement({ ...currentElement, mesh: extrudedPolygon, floors, floorsHeight: height })
     }
@@ -137,13 +185,7 @@ const VisualEditorContainer: FC = (props) => {
 
         const polygonCorners = currentElement.coordinates
 
-        const coordinates = polygonCorners.map(corner => {
-            const mercatorX = -(corner.x - 0.5) * worldScale + worldOriginMercator.x;
-            const mercatorY = (corner.y - 49) * worldScale + worldOriginMercator.y;
-            const mercatorCoordinate = new mapboxgl.MercatorCoordinate(mercatorX, mercatorY, worldAltitude);
-            const lngLat = mercatorCoordinate.toLngLat();
-            return [lngLat.lng, lngLat.lat];
-        });
+        const coordinates = convertBabylonCoordinatesToMapBox(polygonCorners)
 
         const polygonFeature = {
             type: "Feature",

@@ -2,7 +2,6 @@ import * as BABYLON from "@babylonjs/core";
 import { TBabylonObject, TBabylonObjectPlayground } from "../VisualEditor/VisualEditor.types";
 
 export type TEditorContainer = {
-    objectsData?: TObjectData;
     isEditMode: boolean;
     isDrawMode: boolean;
     babylonObjectsData: TBabylonObjectData | undefined
@@ -20,25 +19,19 @@ export type TEditorContainer = {
 }
 
 export type TObjectData = {
+    playground: TProjectObjectPlayground | null;
+    buildings: TProjectObject[];
+}
+
+export type TProjectObject = {
     id: number;
-    playground: TPlayground;
-    buildings: TBuilding[];
-}
-
-export type TPlayground = {
     coordinates: TPoint[];
+    floors?: number;
+    floorsHeight?: number;
+    projectId: number;
 }
 
-export type TBuilding = {
-    id: number;
-    type: string;
-    coordinates: TPoint[];
-    floors: TFloor[];
-}
-
-export type TFloor = {
-    height: number;
-}
+export type TProjectObjectPlayground = Omit<TProjectObject, 'floors' | 'floorsHeight'>;
 
 export type TPoint = {
     x: number;
