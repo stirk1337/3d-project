@@ -16,13 +16,11 @@ export const create3DObject = createAsyncThunk<
     async (data, { extra: api }) => {
         const { object3D, isPlayground } = data;
 
-        const transformedCoordinates = object3D.map(({ x, y }) => ({ x: Math.round(x), y: Math.round(y) }));
-
         const { data: id } = await api.post(`/project/create-${isPlayground ? "playground" : "building"}`, {
-            coordinates: transformedCoordinates,
+            coordinates: object3D,
             project_id: 1
         });
 
-        return id.building_id;
+        return isPlayground ? id.playground_id : id.building_id;
     },
 );

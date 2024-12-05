@@ -31,12 +31,12 @@ const VisualEditorView: FC<TVisualEditorView> = (props) => {
                 <div className={styles.editor__current_controls}>
                     <button className={styles.editor__controls__button} onClick={() => props.clearCurrentElement()}>Закончить редактирование</button>
                     <button className={styles.editor__controls__button} onClick={() => props.handleEditCurrentElement()}>Редактировать объект</button>
-                    {floorsCount ?
+                    {floorsHeight > 1 ?
                         <>
                             <label htmlFor="floorsCount">Количество этажей</label>
                             <input id="floorsCount" type="number" onChange={props.handleFloorsCount} value={floorsCount}></input>
                         </> : null}
-                    {floorsHeight ?
+                    {floorsHeight > 1 ?
                         <>
                             <label htmlFor="floorsHeight">Высота этажа</label>
                             <input id="floorsHeight" type="number" placeholder="Высота одного этажа" onChange={props.handleFloorsHeight} value={floorsHeight}></input>

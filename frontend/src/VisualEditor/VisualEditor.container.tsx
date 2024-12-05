@@ -90,7 +90,7 @@ const VisualEditorContainer: FC = (props) => {
     const handleCurrentElement = (polygonData: TBabylonObject) => {
         if (currentElement && material) currentElement.mesh.material = material[0];
 
-        dispatch(edit3DObject({ isPlayground: !(polygonData.floors && polygonData.floorsHeight), object3D: polygonData }))
+        dispatch(edit3DObject({ isPlayground: !((polygonData.floors && polygonData.floorsHeight)) || polygonData.floorsHeight === 0.1, object3D: polygonData }))
 
         setIsDrawMode(false);
         setCurrentElement(polygonData)
