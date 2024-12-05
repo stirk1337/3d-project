@@ -314,10 +314,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "x": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "y": {
-                    "type": "integer"
+                    "type": "number"
                 }
             }
         },
