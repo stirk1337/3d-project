@@ -81,9 +81,15 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
     useEffect(() => {
         if (!map || !draw) return;
 
+        const handleKeyPress = (event: KeyboardEvent) => {
+            if (event.key === 'Enter') {
+                handleDrawEvent();
+            }
+        };
+
         map.on('draw.create', handleDrawEvent);
-        map.on('draw.delete', () => console.log("удалил"));
-        map.on('draw.update', handleDrawEvent);
+        // Добавляем прослушивание события нажатия клавиши
+        window.addEventListener('keydown', handleKeyPress);
 
         return () => {
             if (map) {
@@ -91,6 +97,8 @@ const EditorContainer: FC<TEditorContainer> = (props) => {
                 map.off('draw.delete', () => console.log("удалил"));
                 map.off('draw.update', handleDrawEvent);
             }
+
+            window.removeEventListener('keydown', handleKeyPress);
         };
     }, [map, draw, isDrawingZone, babylonObjectsData, playground, currentElement]);
 
