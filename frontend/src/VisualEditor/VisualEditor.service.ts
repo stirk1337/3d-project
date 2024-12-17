@@ -61,8 +61,8 @@ export function getBabylonMeshFromCoordinates(
 
 export function convertBabylonCoordinatesToMapBox(BabylonCoordinates: TPoint[]) {
     return BabylonCoordinates.map(corner => {
-        const mercatorX = -(corner.x - 0.5) * worldScale + worldOriginMercator.x;
-        const mercatorY = (corner.y - 49) * worldScale + worldOriginMercator.y;
+        const mercatorX = -(corner.x + 0.3) * worldScale + worldOriginMercator.x;
+        const mercatorY = (corner.y - 49.9) * worldScale + worldOriginMercator.y;
         const mercatorCoordinate = new mapboxgl.MercatorCoordinate(mercatorX, mercatorY, worldAltitude);
         const lngLat = mercatorCoordinate.toLngLat();
         return [lngLat.lng, lngLat.lat];

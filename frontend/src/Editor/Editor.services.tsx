@@ -24,7 +24,7 @@ export function getPolygonCorners(currentDraw: MapboxDraw, playground?: TBabylon
         const babylonX = -(clickedMercator.x - worldOriginMercator.x) / worldScale;
         const babylonZ = (clickedMercator.y - worldOriginMercator.y) / worldScale;
 
-        polygonCorners.push(new BABYLON.Vector2(babylonX + 0.5, babylonZ + 49));
+        polygonCorners.push(new BABYLON.Vector2(babylonX - 0.3, babylonZ + 49.9));
     });
 
     let clippedCorners: BABYLON.Vector2[] = []
